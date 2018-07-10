@@ -1,6 +1,9 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
+using System.Linq;
+using System.Diagnostics;
 
 namespace Python.Runtime
 {
@@ -16,6 +19,18 @@ namespace Python.Runtime
         public MethodBase[] methods;
         public bool init = false;
         public bool allow_threads = true;
+
+        private readonly Dictionary<MethodBase, object[]> _defualtArgs = new Dictionary<MethodBase, object[]>();
+
+        private enum MethodMatchType
+        {
+            NotDefined = 0,
+            Normal,
+            Operator,
+            WithDefaultArgs,
+            WithParamArray,
+            WithDefaultAndParamArray,
+        }
 
         internal MethodBinder()
         {
@@ -280,9 +295,7 @@ namespace Python.Runtime
             // loop to find match, return invoker w/ or /wo error
             MethodBase[] _methods = null;
             int pynargs = Runtime.PyTuple_Size(args);
-            object arg;
             var isGeneric = false;
-            ArrayList defaultArgList = null;
             if (info != null)
             {
                 _methods = new MethodBase[1];
@@ -292,189 +305,42 @@ namespace Python.Runtime
             {
                 _methods = GetMethods();
             }
-            Type clrtype;
             // TODO: Clean up
+            bool hasOverloads = _methods.Length > 1;
             foreach (MethodBase mi in _methods)
             {
                 if (mi.IsGenericMethod)
                 {
                     isGeneric = true;
                 }
-                ParameterInfo[] pi = mi.GetParameters();
-                int clrnargs = pi.Length;
-                var match = false;
-                int arrayStart = -1;
-                var outs = 0;
 
-                if (pynargs == clrnargs)
+                int outs;
+                var margs = GetInvokeArguments(inst, args, mi, pynargs, hasOverloads, out outs);
+                if (margs == null)
                 {
-                    match = true;
+                    continue;
                 }
-                else if (pynargs < clrnargs)
+                object target = null;
+                if (!mi.IsStatic && inst != IntPtr.Zero)
                 {
-                    match = true;
-                    defaultArgList = new ArrayList();
-                    for (int v = pynargs; v < clrnargs; v++)
+                    //CLRObject co = (CLRObject)ManagedType.GetManagedObject(inst);
+                    // InvalidCastException: Unable to cast object of type
+                    // 'Python.Runtime.ClassObject' to type 'Python.Runtime.CLRObject'
+                    var co = ManagedType.GetManagedObject(inst) as CLRObject;
+
+                    // Sanity check: this ensures a graceful exit if someone does
+                    // something intentionally wrong like call a non-static method
+                    // on the class rather than on an instance of the class.
+                    // XXX maybe better to do this before all the other rigmarole.
+                    if (co == null)
                     {
-                        if (pi[v].DefaultValue == DBNull.Value)
-                        {
-                            match = false;
-                        }
-                        else
-                        {
-                            defaultArgList.Add(pi[v].DefaultValue);
-                        }
+                        return null;
                     }
-                }
-                else if (pynargs > clrnargs && clrnargs > 0 &&
-                         Attribute.IsDefined(pi[clrnargs - 1], typeof(ParamArrayAttribute)))
-                {
-                    // This is a `foo(params object[] bar)` style method
-                    match = true;
-                    arrayStart = clrnargs - 1;
+                    target = co.inst;
                 }
 
-                if (match)
-                {
-                    var margs = new object[clrnargs];
-
-                    for (var n = 0; n < clrnargs; n++)
-                    {
-                        IntPtr op;
-                        if (n < pynargs)
-                        {
-                            if (arrayStart == n)
-                            {
-                                // map remaining Python arguments to a tuple since
-                                // the managed function accepts it - hopefully :]
-                                op = Runtime.PyTuple_GetSlice(args, arrayStart, pynargs);
-                            }
-                            else
-                            {
-                                op = Runtime.PyTuple_GetItem(args, n);
-                            }
-
-                            // this logic below handles cases when multiple overloading methods
-                            // are ambiguous, hence comparison between Python and CLR types
-                            // is necessary
-                            clrtype = null;
-                            IntPtr pyoptype;
-                            if (_methods.Length > 1)
-                            {
-                                pyoptype = IntPtr.Zero;
-                                pyoptype = Runtime.PyObject_Type(op);
-                                Exceptions.Clear();
-                                if (pyoptype != IntPtr.Zero)
-                                {
-                                    clrtype = Converter.GetTypeByAlias(pyoptype);
-                                }
-                                Runtime.XDecref(pyoptype);
-                            }
-
-
-                            if (clrtype != null)
-                            {
-                                var typematch = false;
-                                if ((pi[n].ParameterType != typeof(object)) && (pi[n].ParameterType != clrtype))
-                                {
-                                    IntPtr pytype = Converter.GetPythonTypeByAlias(pi[n].ParameterType);
-                                    pyoptype = Runtime.PyObject_Type(op);
-                                    Exceptions.Clear();
-                                    if (pyoptype != IntPtr.Zero)
-                                    {
-                                        if (pytype != pyoptype)
-                                        {
-                                            typematch = false;
-                                        }
-                                        else
-                                        {
-                                            typematch = true;
-                                            clrtype = pi[n].ParameterType;
-                                        }
-                                    }
-                                    if (!typematch)
-                                    {
-                                        // this takes care of enum values
-                                        TypeCode argtypecode = Type.GetTypeCode(pi[n].ParameterType);
-                                        TypeCode paramtypecode = Type.GetTypeCode(clrtype);
-                                        if (argtypecode == paramtypecode)
-                                        {
-                                            typematch = true;
-                                            clrtype = pi[n].ParameterType;
-                                        }
-                                    }
-                                    Runtime.XDecref(pyoptype);
-                                    if (!typematch)
-                                    {
-                                        margs = null;
-                                        break;
-                                    }
-                                }
-                                else
-                                {
-                                    typematch = true;
-                                    clrtype = pi[n].ParameterType;
-                                }
-                            }
-                            else
-                            {
-                                clrtype = pi[n].ParameterType;
-                            }
-
-                            if (pi[n].IsOut || clrtype.IsByRef)
-                            {
-                                outs++;
-                            }
-
-                            if (!Converter.ToManaged(op, clrtype, out arg, false))
-                            {
-                                Exceptions.Clear();
-                                margs = null;
-                                break;
-                            }
-                            if (arrayStart == n)
-                            {
-                                // GetSlice() creates a new reference but GetItem()
-                                // returns only a borrow reference.
-                                Runtime.XDecref(op);
-                            }
-                            margs[n] = arg;
-                        }
-                        else
-                        {
-                            if (defaultArgList != null)
-                            {
-                                margs[n] = defaultArgList[n - pynargs];
-                            }
-                        }
-                    }
-
-                    if (margs == null)
-                    {
-                        continue;
-                    }
-
-                    object target = null;
-                    if (!mi.IsStatic && inst != IntPtr.Zero)
-                    {
-                        //CLRObject co = (CLRObject)ManagedType.GetManagedObject(inst);
-                        // InvalidCastException: Unable to cast object of type
-                        // 'Python.Runtime.ClassObject' to type 'Python.Runtime.CLRObject'
-                        var co = ManagedType.GetManagedObject(inst) as CLRObject;
-
-                        // Sanity check: this ensures a graceful exit if someone does
-                        // something intentionally wrong like call a non-static method
-                        // on the class rather than on an instance of the class.
-                        // XXX maybe better to do this before all the other rigmarole.
-                        if (co == null)
-                        {
-                            return null;
-                        }
-                        target = co.inst;
-                    }
-
-                    return new Binding(mi, target, margs, outs);
-                }
+                return new Binding(mi, target, margs, outs);
+                
             }
             // We weren't able to find a matching method but at least one
             // is a generic method and info is null. That happens when a generic
@@ -487,6 +353,226 @@ namespace Python.Runtime
                 return Bind(inst, args, kw, mi, null);
             }
             return null;
+        }
+
+        private static bool ExtractArgument(IntPtr op, Type clrType,
+            bool hasOverload, ref object clrArg)
+        {
+            if (hasOverload && !IsMatchedClrType(op, clrType))
+            {
+                return false;
+            }
+            if (!Converter.ToManaged(op, clrType, out clrArg, false))
+            {
+                Exceptions.Clear();
+                return false;
+            }
+            return true;
+        }
+
+        private static bool IsMatchedClrType(IntPtr op, Type targetType)
+        {
+            IntPtr pyoptype = Runtime.PyObject_Type(op);
+            Debug.Assert(op != IntPtr.Zero && !Exceptions.ErrorOccurred());
+            Type clrtype = Converter.GetTypeByAlias(pyoptype);
+            if (clrtype == null)
+            {
+                Runtime.XDecref(pyoptype);
+                return false;
+            }
+
+            try
+            {
+                if ((targetType != typeof(object)) && (targetType != clrtype))
+                {
+                    IntPtr pytype = Converter.GetPythonTypeByAlias(targetType);
+                    if (pytype == pyoptype)
+                    {
+                        return true;
+                    }
+                    // this takes care of enum values
+                    TypeCode argtypecode = Type.GetTypeCode(targetType);
+                    TypeCode paramtypecode = Type.GetTypeCode(clrtype);
+                    if (argtypecode == paramtypecode)
+                    {
+                        return true;
+                    }
+                    return false;
+                }
+            }
+            finally
+            {
+                Runtime.XDecref(pyoptype);
+            }
+
+            return true;
+        }
+
+        private object[] GetInvokeArguments(IntPtr inst, IntPtr args, MethodBase mi,
+            int pynargs, bool hasOverloads, out int outs)
+        {
+            ParameterInfo[] pi = mi.GetParameters();
+            int clrnargs = pi.Length;
+            outs = 0;
+            object[] margs = new object[clrnargs];
+            if (clrnargs == 0)
+            {
+                return margs;
+            }
+            if (!GetMultiInvokeArguments(inst, args, pynargs, mi, pi, hasOverloads, margs, ref outs))
+            {
+                return null;
+            }
+            return margs;
+        }
+
+        private bool GetMultiInvokeArguments(IntPtr inst, IntPtr args, int pynargs,
+            MethodBase mi, ParameterInfo[] pi,
+            bool hasOverloads, object[] margs, ref int outs)
+        {
+            int clrnargs = pi.Length;
+            Debug.Assert(clrnargs > 0);
+            bool isOperator = OperatorMethod.IsOperatorMethod(mi);
+            Type lastType = pi[clrnargs - 1].ParameterType;
+            bool hasArrayArgs = clrnargs > 0 &&
+                                lastType.IsArray &&
+                                pi[clrnargs - 1].IsDefined(typeof(ParamArrayAttribute), false);
+
+            int fixedCnt = 0;
+            int fixedStart = 0;
+            MethodMatchType matchType;
+
+            if (!hasArrayArgs)
+            {
+                if (pynargs == clrnargs)
+                {
+                    fixedCnt = clrnargs;
+                    matchType = MethodMatchType.Normal;
+                }
+                else if (isOperator && pynargs == clrnargs - 1)
+                {
+                    // We need to skip the first argument
+                    // cause of operator method is a bound method in Python
+                    fixedStart = inst != IntPtr.Zero ? 1 : 0;
+                    fixedCnt = clrnargs - 1;
+                    matchType = MethodMatchType.Operator;
+                }
+                else if (pynargs < clrnargs)
+                {
+                    // Not included `foo(int x = 0, params object[] bar)`
+                    object[] defaultArgList = GetDefualtArgs(mi);
+                    if (defaultArgList[pynargs] == DBNull.Value)
+                    {
+                        return false;
+                    }
+                    fixedCnt = pynargs;
+                    matchType = MethodMatchType.WithDefaultArgs;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                Debug.Assert(!isOperator);
+                if (pynargs == clrnargs - 1)
+                {
+                    fixedCnt = clrnargs - 1;
+                    matchType = MethodMatchType.Normal;
+                }
+                else if (pynargs < clrnargs - 1)
+                {
+                    // Included `foo(int x = 0, params object[] bar)`
+                    if ((pi[pynargs].Attributes & ParameterAttributes.HasDefault) == 0)
+                    {
+                        return false;
+                    }
+                    fixedCnt = pynargs;
+                    matchType = MethodMatchType.WithDefaultArgs;
+                }
+                else
+                {
+                    // This is a `foo(params object[] bar)` style method
+                    // Included `foo(int x = 0, params object[] bar)`
+                    fixedCnt = clrnargs - 1;
+                    matchType = MethodMatchType.WithParamArray;
+                }
+            }
+
+            for (int i = 0; i < fixedCnt; i++)
+            {
+                int fixedIdx = i + fixedStart;
+                ParameterInfo param = pi[fixedIdx];
+                Type clrType = param.ParameterType;
+                if (i >= pynargs)
+                {
+                    return false;
+                }
+
+                IntPtr op = Runtime.PyTuple_GetItem(args, i);
+                if (!ExtractArgument(op, clrType, hasOverloads, ref margs[fixedIdx]))
+                {
+                    return false;
+                }
+
+                if (param.IsOut || clrType.IsByRef)
+                {
+                    outs++;
+                }
+            }
+
+            switch (matchType)
+            {
+                case MethodMatchType.Normal:
+                    if (hasArrayArgs)
+                    {
+                        margs[clrnargs - 1] = Array.CreateInstance(lastType.GetElementType(), 0);
+                    }
+                    break;
+
+                case MethodMatchType.Operator:
+                    if (inst != IntPtr.Zero)
+                    {
+                        var co = ManagedType.GetManagedObject(inst) as CLRObject;
+                        if (co == null)
+                        {
+                            return false;
+                        }
+
+                        margs[0] = co.inst;
+                    }
+                    break;
+
+                case MethodMatchType.WithDefaultArgs:
+                    object[] defaultArgList = GetDefualtArgs(mi);
+                    Debug.Assert(defaultArgList != null);
+                    int argCnt = hasArrayArgs ? clrnargs - 1 : clrnargs;
+                    for (int i = fixedCnt; i < argCnt; i++)
+                    {
+                        margs[i] = defaultArgList[i];
+                    }
+
+                    if (hasArrayArgs)
+                    {
+                        margs[clrnargs - 1] = Array.CreateInstance(lastType.GetElementType(), 0);
+                    }
+                    break;
+
+                case MethodMatchType.WithParamArray:
+                    // map remaining Python arguments to a tuple since
+                    // the managed function accepts it - hopefully :]
+                    IntPtr op = Runtime.PyTuple_GetSlice(args, clrnargs - 1, pynargs);
+                    if (!Converter.ToManaged(op, lastType, out margs[clrnargs - 1], false))
+                    {
+                        return false;
+                    }
+                    break;
+
+                default:
+                    return false;
+            }
+            return true;
         }
 
         internal virtual IntPtr Invoke(IntPtr inst, IntPtr args, IntPtr kw)
@@ -585,6 +671,19 @@ namespace Python.Runtime
             }
 
             return Converter.ToPython(result, mi.ReturnType);
+        }
+
+        private object[] GetDefualtArgs(MethodBase method)
+        {
+            object[] args;
+            if (_defualtArgs.TryGetValue(method, out args))
+            {
+                return args;
+            }
+            var paramsInfo = method.GetParameters();
+            args = paramsInfo.Select(T => T.DefaultValue).ToArray();
+            _defualtArgs[method] = args;
+            return args;
         }
     }
 
