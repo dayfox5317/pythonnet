@@ -358,6 +358,9 @@ namespace Python.Runtime
         private static bool ExtractArgument(IntPtr op, Type clrType,
             bool hasOverload, ref object clrArg)
         {
+            // this logic below handles cases when multiple overloading methods
+            // are ambiguous, hence comparison between Python and CLR types
+            // is necessary
             if (hasOverload && !IsMatchedClrType(op, clrType))
             {
                 return false;
@@ -377,8 +380,9 @@ namespace Python.Runtime
             Type clrtype = Converter.GetTypeByAlias(pyoptype);
             if (clrtype == null)
             {
+                // Not a basic builtin type, pass it
                 Runtime.XDecref(pyoptype);
-                return false;
+                return true;
             }
 
             try
@@ -414,11 +418,15 @@ namespace Python.Runtime
             ParameterInfo[] pi = mi.GetParameters();
             int clrnargs = pi.Length;
             outs = 0;
-            object[] margs = new object[clrnargs];
             if (clrnargs == 0)
             {
-                return margs;
+                if (pynargs != 0)
+                {
+                    return null;
+                }
+                return new object[0];
             }
+            object[] margs = new object[clrnargs];
             if (!GetMultiInvokeArguments(inst, args, pynargs, mi, pi, hasOverloads, margs, ref outs))
             {
                 return null;
@@ -539,7 +547,6 @@ namespace Python.Runtime
                         {
                             return false;
                         }
-
                         margs[0] = co.inst;
                     }
                     break;
@@ -560,11 +567,26 @@ namespace Python.Runtime
                     break;
 
                 case MethodMatchType.WithParamArray:
-                    // map remaining Python arguments to a tuple since
-                    // the managed function accepts it - hopefully :]
-                    IntPtr op = Runtime.PyTuple_GetSlice(args, clrnargs - 1, pynargs);
+                    if (pynargs <= clrnargs - 1)
+                    {
+                        break;
+                    }
+
+                    IntPtr op;
+                    if (pynargs == 1 && pynargs == clrnargs)
+                    {
+                        // There is no need for slice
+                        op = args;
+                    }
+                    else
+                    {
+                        // map remaining Python arguments to a tuple since
+                        // the managed function accepts it - hopefully :]
+                        op = Runtime.PyTuple_GetSlice(args, clrnargs - 1, pynargs);
+                    }
                     if (!Converter.ToManaged(op, lastType, out margs[clrnargs - 1], false))
                     {
+                        Exceptions.Clear();
                         return false;
                     }
                     break;
