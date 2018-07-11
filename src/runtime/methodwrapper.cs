@@ -13,6 +13,7 @@ namespace Python.Runtime
         public IntPtr mdef;
         public IntPtr ptr;
         private bool _disposed = false;
+        private bool _finalized = false;
 
         public MethodWrapper(Type type, string name, string funcType = null)
         {
@@ -30,7 +31,12 @@ namespace Python.Runtime
 
         ~MethodWrapper()
         {
-            Dispose();
+            if (_finalized || _disposed)
+            {
+                return;
+            }
+            _finalized = true;
+            Finalizer.Instance.AddFinalizedObject(this);
         }
 
         public IntPtr Call(IntPtr args, IntPtr kw)
