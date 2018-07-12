@@ -21,7 +21,11 @@ namespace Python.Runtime
                 ["op_Addition"] = Tuple.Create("__add__", TypeOffset.nb_add),
                 ["op_Subtraction"] = Tuple.Create("__sub__", TypeOffset.nb_subtract),
                 ["op_Multiply"] = Tuple.Create("__mul__", TypeOffset.nb_multiply),
+#if PYTHON2
+                ["op_Division"] = Tuple.Create("__div__", TypeOffset.nb_divide),
+#else
                 ["op_Division"] = Tuple.Create("__truediv__", TypeOffset.nb_true_divide),
+#endif
                 ["op_BitwiseAnd"] = Tuple.Create("__and__", TypeOffset.nb_and),
                 ["op_BitwiseOr"] = Tuple.Create("__or__", TypeOffset.nb_or),
                 ["op_ExclusiveOr"] = Tuple.Create("__xor__", TypeOffset.nb_xor),
