@@ -5,12 +5,12 @@ using System.Text;
 
 namespace Python.Runtime.Binder
 {
-    static class TypeTraitsInitilizer
+    static class TypeTraitsInitializer
     {
         public static bool InitFlag = true;
 
 
-        static TypeTraitsInitilizer()
+        static TypeTraitsInitializer()
         {
             TypeTraits<int>.Is = Runtime.PyInt_Check;
             TypeTraits<uint>.Is = TypeTraits<int>.Is;
@@ -24,14 +24,36 @@ namespace Python.Runtime.Binder
             TypeTraits<double>.Is = Runtime.PyFloat_Check;
             TypeTraits<decimal>.Is = Runtime.PyFloat_Check;
             TypeTraits<object[]>.Is = Runtime.PySequence_Check;
+            TypeTraits<PyObject>.Is = ManagedType.IsManagedType;
         }
     }
 
     static class TypeTraits<T>
     {
         static Type _type = typeof(T);
-        static internal Func<IntPtr, bool> Is = DefaultChecker;
-        static readonly bool _ = TypeTraitsInitilizer.InitFlag;
+        private static Func<IntPtr, bool> _isType = (op) => TypeCheck.DefaultChecker(_type, op);
+        //static internal Func<IntPtr, bool> Is = DefaultChecker;
+
+        static readonly bool _ = TypeTraitsInitializer.InitFlag;
+
+        internal static Func<IntPtr, bool> Is
+        {
+            get
+            {
+                return _isType;
+            }
+
+            set
+            {
+                TypeCheck.RegisterChecker(_type, value);
+                _isType = value;
+            }
+        }
+
+        static TypeTraits()
+        {
+
+        }
 
         static bool IsInt(IntPtr op)
         {
@@ -39,17 +61,17 @@ namespace Python.Runtime.Binder
             return Runtime.PyIntType == pyType;
         }
 
-        static bool DefaultChecker(IntPtr op)
-        {
-            // TODO: handle inherit
-            if (_type.IsArray && !Runtime.PySequence_Check(op))
-            {
-                return false;
-            }
-            ClassBase cls = ClassManager.GetClass(_type);
-            IntPtr pyType = Runtime.PyObject_TYPE(op);
-            return cls.pyHandle == pyType;
-        }
+        //static bool DefaultChecker(IntPtr op)
+        //{
+        //    // TODO: handle inherit
+        //    if (_type.IsArray && !Runtime.PySequence_Check(op))
+        //    {
+        //        return CheckArray(op);
+        //    }
+        //    ClassBase cls = ClassManager.GetClass(_type);
+        //    IntPtr pyType = Runtime.PyObject_TYPE(op);
+        //    return cls.pyHandle == pyType;
+        //}
 
         static bool CheckArray(IntPtr op)
         {
@@ -87,8 +109,105 @@ namespace Python.Runtime.Binder
 
     static partial class TypeCheck
     {
+        static Dictionary<Type, Func<IntPtr, bool>> _checkers = new Dictionary<Type, Func<IntPtr, bool>>();
+
+        public static void RegisterChecker(Type type, Func<IntPtr, bool> checker)
+        {
+            if (_checkers.ContainsKey(type))
+            {
+                _checkers.Remove(type);
+            }
+            _checkers.Add(type, checker);
+        }
+
         public static bool CheckType(Type type, IntPtr op)
         {
+            Func<IntPtr, bool> checker;
+            if (_checkers.TryGetValue(type, out checker))
+            {
+                return checker(op);
+            }
+            return DefaultChecker(type, op);
+        }
+
+        public static bool DefaultChecker(Type type, IntPtr op)
+        {
+            // TODO: handle inherit
+            if (type.IsArray && Runtime.PySequence_Check(op))
+            {
+                return CheckArray(type, op);
+            }
+            if (op == Runtime.PyNone && !type.IsValueType)
+            {
+                return true;
+            }
+            // TODO: __isinstance__
+            // Common case: if the Python value is a wrapped managed object
+            // instance, just return the wrapped object.
+            ManagedType mt = ManagedType.GetManagedObject(op);
+            if (mt != null)
+            {
+                if (mt is CLRObject)
+                {
+                    object tmp = ((CLRObject)mt).inst;
+                    if (type.IsInstanceOfType(tmp))
+                    {
+                        return true;
+                    }
+                    return false;
+                }
+                if (mt is ClassBase)
+                {
+                    return ((ClassBase)mt).type.GetType().IsInstanceOfType(type);
+                }
+                // shouldn't happen
+                return false;
+            }
+            ClassBase cls = ClassManager.GetClass(type);
+            return Runtime.PyObject_IsInstance(op, cls.pyHandle) == 1;
+        }
+
+        static bool CheckArray(Type type, IntPtr op)
+        {
+            Type elemType = type.GetElementType();
+            IntPtr pyElemType = IntPtr.Zero;
+            int size = Runtime.PySequence_Size(op);
+            for (int i = 0; i < size; i++)
+            {
+                IntPtr item = Runtime.PySequence_GetItem(op, i);
+                if (item == IntPtr.Zero)
+                {
+                    throw new ArgumentNullException();
+                }
+                if (pyElemType == IntPtr.Zero && item == Runtime.PyNone)
+                {
+                    continue;
+                }
+
+                if (ManagedType.IsManagedType(item))
+                {
+
+                }
+
+                //IntPtr pyCurType = Runtime.PyObject_TYPE(item);
+                //if (pyElemType == IntPtr.Zero)
+                //{
+                //    pyElemType = pyCurType;
+                //}
+                //else
+                //{
+                //    //Runtime.PyObject_IsInstance()
+                //    if (pyElemType != pyCurType)
+                //    {
+                //        return false;
+                //    }
+                //}
+
+                if (!TypeCheck.CheckType(elemType, item))
+                {
+                    return false;
+                }
+            }
             return true;
         }
     }

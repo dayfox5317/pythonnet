@@ -1084,15 +1084,81 @@ namespace Python.Runtime
         }
     }
 
+    static class ArraryConverter<T>
+    {
+        static Type _type = typeof(T);
+
+        internal static T[] Get(IntPtr op)
+        {
+            int size = Runtime.PySequence_Size(op);
+            T[] res = new T[size];
+            for (int i = 0; i < size; i++)
+            {
+                IntPtr item = Runtime.PySequence_GetItem(op, i);
+                if (item == IntPtr.Zero)
+                {
+                    throw new ArgumentNullException();
+                }
+                res[i] = ValueConverter<T>.Get(item);
+            }
+            return res;
+        }
+    }
+
     static class ValueConverter<T>
     {
+        static Type _type = typeof(T);
         static internal Func<IntPtr, T> Get = DefaultGetter;
         static readonly bool _ = ValueConverterInitializer.InitFlag;
 
+        static ValueConverter()
+        {
+            if (_type.IsArray)
+            {
+                var convererType = typeof(ArraryConverter<>).MakeGenericType(_type.GetElementType());
+                var mi = convererType.GetMethod("Get", BindingFlags.Static | BindingFlags.NonPublic);
+                Get = (Func<IntPtr, T>)Delegate.CreateDelegate(Get.GetType(), mi);
+                //Get = typeof(ArraryConverter<>).MakeGenericType(_type.GetElementType());
+            }
+        }
+
         private static T DefaultGetter(IntPtr op)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(op);
-            return (T)clrObj.inst;
+            if (op == Runtime.PyNone && !_type.IsValueType)
+            {
+                return default(T);
+            }
+            var obj = ManagedType.GetManagedObject(op);
+            if (obj is CLRObject)
+            {
+                var clrObj = (CLRObject)obj;
+                return (T)clrObj.inst;
+            }
+            else if (obj is ClassBase)
+            {
+                var clsObj = (ClassBase)obj;
+                return (T)(object)clsObj.type;
+            }
+            throw new InvalidCastException();
+            // TODO: raise TypeError
         }
+
+        //static T ConvertArray(IntPtr op)
+        //{
+        //    int size = Runtime.PySequence_Size(op);
+        //    for (int i = 0; i < size; i++)
+        //    {
+        //        IntPtr item = Runtime.PySequence_GetItem(op, i);
+        //        if (item == IntPtr.Zero)
+        //        {
+        //            throw new ArgumentNullException();
+        //        }
+        //        IntPtr pyCurType = Runtime.PyObject_TYPE(item);
+        //        if (!TypeCheck.CheckType(elemType, item))
+        //        {
+        //            return false;
+        //        }
+        //    }
+        //}
     }
 }

@@ -434,6 +434,10 @@ namespace Python.Runtime
     {
         public static ExtensionType CreateDelegateMethod(Type type, string name, MethodInfo[] info)
         {
+            if (name == "CreateInstance")
+            {
+                Console.WriteLine();
+            }
             if (IsIncompatibleType(type)) return null;
             for (int i = 0; i < info.Length; i++)
             {

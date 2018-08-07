@@ -51,10 +51,6 @@ namespace Python.Runtime
             // Initialize the object later, as this might call this GetClass method
             // recursively (for example when a nested class inherits its declaring class...)
             InitClassBase(type, cb);
-            if (cb.pyHandle == IntPtr.Zero)
-            {
-                Console.WriteLine();
-            }
             return cb;
         }
 
