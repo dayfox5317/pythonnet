@@ -150,11 +150,7 @@ namespace Python.Runtime.Binder
                 if (mt is CLRObject)
                 {
                     object tmp = ((CLRObject)mt).inst;
-                    if (type.IsInstanceOfType(tmp))
-                    {
-                        return true;
-                    }
-                    return false;
+                    return type.IsInstanceOfType(tmp);
                 }
                 if (mt is ClassBase)
                 {

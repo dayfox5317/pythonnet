@@ -1084,7 +1084,7 @@ namespace Python.Runtime
         }
     }
 
-    static class ArraryConverter<T>
+    static class ArraryConverter1<T>
     {
         static Type _type = typeof(T);
 
@@ -1105,29 +1105,24 @@ namespace Python.Runtime
         }
     }
 
-    static class ValueConverter<T>
+    // TODO: prevent boxing
+    static class ArraryConverter<T>
     {
         static Type _type = typeof(T);
-        static internal Func<IntPtr, T> Get = DefaultGetter;
-        static readonly bool _ = ValueConverterInitializer.InitFlag;
+        static int _rank = _type.GetArrayRank();
+        static int[] _dimensionLen = new int[_rank];
+        private static Func<IntPtr, object> _elemConveter;
 
-        static ValueConverter()
+        static ArraryConverter()
         {
-            if (_type.IsArray)
-            {
-                var convererType = typeof(ArraryConverter<>).MakeGenericType(_type.GetElementType());
-                var mi = convererType.GetMethod("Get", BindingFlags.Static | BindingFlags.NonPublic);
-                Get = (Func<IntPtr, T>)Delegate.CreateDelegate(Get.GetType(), mi);
-                //Get = typeof(ArraryConverter<>).MakeGenericType(_type.GetElementType());
-            }
+            var convererType = typeof(ArraryConverter1<>).MakeGenericType(_type.GetElementType());
+            var mi = convererType.GetMethod("Get", BindingFlags.Static | BindingFlags.NonPublic);
+            _elemConveter = (Func<IntPtr, object>)Delegate.CreateDelegate(typeof(Func<IntPtr, object>), mi);
         }
 
-        private static T DefaultGetter(IntPtr op)
+        internal static T Get(IntPtr op)
         {
-            if (op == Runtime.PyNone && !_type.IsValueType)
-            {
-                return default(T);
-            }
+            //int size = Runtime.PySequence_Size(op);
             var obj = ManagedType.GetManagedObject(op);
             if (obj is CLRObject)
             {
@@ -1139,7 +1134,79 @@ namespace Python.Runtime
                 var clsObj = (ClassBase)obj;
                 return (T)(object)clsObj.type;
             }
-            throw new InvalidCastException();
+            object res = DfsGet(0, op);
+            Array arr = Array.CreateInstance(_type.GetElementType(), _dimensionLen);
+            return (T)(object)arr;
+        }
+
+        static object DfsGet(int depth, IntPtr op)
+        {
+            if (depth == _rank - 1)
+            {
+                return _elemConveter(op);
+            }
+            int size = Runtime.PySequence_Size(op);
+            _dimensionLen[depth] = Math.Max(size, _dimensionLen[depth]);
+            object[] arr = new object[size];
+            for (int i = 0; i < size; i++)
+            {
+                IntPtr item = Runtime.PySequence_GetItem(op, i);
+                if (item == IntPtr.Zero)
+                {
+                    throw new ArgumentNullException();
+                }
+                arr[i] = DfsGet(depth + 1, item);
+            }
+            return arr;
+        }
+    }
+
+    static class ValueConverter<T>
+    {
+        static Type _type = typeof(T);
+        static internal Func<IntPtr, T> Get = DefaultGetter;
+        static readonly bool _ = ValueConverterInitializer.InitFlag;
+
+        static ValueConverter()
+        {
+            if (_type.IsArray)
+            {
+                if (_type.GetArrayRank() == 1)
+                {
+                    var convererType = typeof(ArraryConverter1<>).MakeGenericType(_type.GetElementType());
+                    var mi = convererType.GetMethod("Get", BindingFlags.Static | BindingFlags.NonPublic);
+                    Get = (Func<IntPtr, T>)Delegate.CreateDelegate(typeof(Func<IntPtr, T>), mi);
+                }
+                else
+                {
+                    Get = ArraryConverter<T>.Get;
+                }
+            }
+        }
+
+        private static T DefaultGetter(IntPtr op)
+        {
+            if (op == Runtime.PyNone && !_type.IsValueType)
+            {
+                return default(T);
+            }
+            var obj = ManagedType.GetManagedObject(op);
+            if (obj != null)
+            {
+                if (obj is CLRObject)
+                {
+                    var clrObj = (CLRObject)obj;
+                    return (T)clrObj.inst;
+                }
+                else if (obj is ClassBase)
+                {
+                    var clsObj = (ClassBase)obj;
+                    return (T)(object)clsObj.type;
+                }
+            }
+            object result;
+            Converter.ToManagedValue(op, _type, out result, false);
+            return (T)result;
             // TODO: raise TypeError
         }
 

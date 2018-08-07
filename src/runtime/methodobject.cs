@@ -288,18 +288,15 @@ namespace Python.Runtime
     }
 
 
-    class DelegateCallableObject : IDisposable
+    class DelegateCallableObject
     {
-        PyCFunction _func;
-        IntPtr _methodDefPtr;
         Dictionary<int, List<Method.IMethodCaller>> _callers;
+        private string _name;
 
         public DelegateCallableObject(string name)
         {
-            _func = PyCall;
+            _name = name;
             _callers = new Dictionary<int, List<Method.IMethodCaller>>();
-            IntPtr funcPtr = Marshal.GetFunctionPointerForDelegate(_func);
-            _methodDefPtr = TypeManager.CreateMethodDef(name, funcPtr, (int)METH.METH_VARARGS);
         }
 
         public bool Empty()
@@ -307,10 +304,6 @@ namespace Python.Runtime
             return _callers.Count == 0;
         }
 
-        public IntPtr GetBoundMethodPointer(IntPtr ob)
-        {
-            return Runtime.PyCFunction_NewEx(_methodDefPtr, ob, IntPtr.Zero);
-        }
 
         public Method.IMethodCaller AddMethod(Type boundType, MethodInfo mi)
         {
@@ -355,6 +348,10 @@ namespace Python.Runtime
             if (!_callers.TryGetValue(argc, out callerList))
             {
                 return Exceptions.RaiseTypeError("No match found for given type params");
+            }
+            if (_name == "set_Item")
+            {
+                Console.WriteLine();
             }
             foreach (var caller in callerList)
             {
@@ -422,11 +419,7 @@ namespace Python.Runtime
             return func;
         }
 
-        public void Dispose()
-        {
-            TypeManager.FreeMethodDef(_methodDefPtr);
-            _methodDefPtr = IntPtr.Zero;
-        }
+
     }
 
 
