@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Linq;
+using System.Diagnostics;
 
 namespace Python.Runtime
 {
@@ -56,6 +58,7 @@ namespace Python.Runtime
             }
 
             var mb = new MethodBinding(self.m, self.target) { info = mi };
+            Runtime.XIncref(mb.pyHandle);
             return mb.pyHandle;
         }
 
@@ -84,6 +87,7 @@ namespace Python.Runtime
                 case "__overloads__":
                 case "Overloads":
                     var om = new OverloadMapper(self.m, self.target);
+                    Runtime.XIncref(om.pyHandle);
                     return om.pyHandle;
                 default:
                     return Runtime.PyObject_GenericGetAttr(ob, key);
@@ -240,6 +244,125 @@ namespace Python.Runtime
             Runtime.XDecref(self.target);
             Runtime.XDecref(self.targetType);
             FinalizeObject(self);
+        }
+    }
+
+    internal class DelegateMethodBinding : ExtensionType
+    {
+        MethodInfo[] info;
+        Type _boundType;
+        IntPtr _target;
+
+        Dictionary<Type[], DelegateBoundMethodObject> _genericCallers;
+        DelegateCallableObject _caller;
+        static Comparator _comaprator = new Comparator();
+
+        class Comparator : IEqualityComparer<Type[]>
+        {
+            public bool Equals(Type[] x, Type[] y)
+            {
+                if (x.Length != y.Length)
+                {
+                    return false;
+                }
+                for (int i = 0; i < x.Length; i++)
+                {
+                    if (x[i] != y[i])
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            public int GetHashCode(Type[] obj)
+            {
+                int hash = 0;
+                foreach (var item in obj)
+                {
+                    hash ^= item.GetHashCode();
+                }
+                return hash;
+            }
+        }
+
+        public DelegateMethodBinding(Type type, IntPtr target, MethodInfo[] infos, DelegateCallableObject caller)
+        {
+            _target = target;
+            _boundType = type;
+            info = infos;
+            _caller = caller;
+            _genericCallers = new Dictionary<Type[], DelegateBoundMethodObject>(_comaprator);
+
+        }
+        /// <summary>
+        /// Implement binding of generic methods using the subscript syntax [].
+        /// </summary>
+        public static IntPtr mp_subscript(IntPtr tp, IntPtr idx)
+        {
+            var self = (DelegateMethodBinding)GetManagedObject(tp);
+            Debug.Assert(self.info.Length > 0);
+
+            Type[] types = Runtime.PythonArgsToTypeArray(idx);
+            if (types == null)
+            {
+                return Exceptions.RaiseTypeError("type(s) expected");
+            }
+
+            DelegateBoundMethodObject methodObj;
+            DelegateCallableObject caller;
+            if (self._genericCallers.TryGetValue(types, out methodObj))
+            {
+                if (methodObj.IsCallable())
+                {
+                    Runtime.XIncref(methodObj.pyHandle);
+                    return methodObj.pyHandle;
+                }
+                return RaiseMatchError();
+            }
+            caller = new DelegateCallableObject(self.info[0].Name);
+
+            var methods = MethodBinder.MatchParamertersMethods(self.info, types);
+            foreach (var mi in methods)
+            {
+                if (mi.IsStatic)
+                {
+                    caller.AddStaticMethod(mi);
+                }
+                else
+                {
+                    caller.AddMethod(self._boundType, mi);
+                }
+            }
+            methodObj = BoundMethodPool.NewBoundMethod(self._target, caller);
+            self._genericCallers.Add(types, methodObj);
+            if (methodObj.IsCallable())
+            {
+                Runtime.XIncref(methodObj.pyHandle);
+                return methodObj.pyHandle;
+            }
+            return RaiseMatchError();
+        }
+
+        private static IntPtr RaiseMatchError()
+        {
+            return Exceptions.RaiseTypeError("No match found for given type params");
+        }
+        
+
+        public static IntPtr tp_call(IntPtr ob, IntPtr args, IntPtr kw)
+        {
+            var self = (DelegateMethodBinding)GetManagedObject(ob);
+            return self._caller.PyCall(self._target, args);
+        }
+    }
+
+    internal class DelegateGenericBinding : ExtensionType
+    {
+
+        public DelegateGenericBinding()
+        {
+
         }
     }
 }

@@ -1,0 +1,347 @@
+<#@ template debug="true" hostSpecific="true" #>
+<#@ output extension=".cs" #>
+<#@ Assembly Name="System.Core" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Diagnostics" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Collections" #>
+<#@ import namespace="System.Collections.Generic" #> 
+<#
+    const int maxArgsCount = 16;
+    string[] actionGenerics = new string[maxArgsCount];
+    for (int i = 0; i < maxArgsCount; i++)
+    {
+        string[] paramStrs = new string[i + 1];
+        paramStrs[0] = "Cls";
+        for (int j = 0; j < i; j++)
+        {
+             paramStrs[j + 1] = string.Format("T{0}", j + 1);
+        }
+        string s = string.Join(",", paramStrs);
+        actionGenerics[i] = s;
+    }
+#>
+using System;
+using System.Reflection;
+using Python.Runtime.Binder;
+
+namespace Python.Runtime.Method
+{
+    interface IMethodCaller
+    {
+        bool Check(IntPtr args);
+        IntPtr Call(IntPtr self, IntPtr args);
+    }
+
+    static class ActionCallerCreator
+    {
+        public static Func<Type[], Type>[] CreateDelgates = new Func<Type[], Type>[]
+        {
+<#      for (int i = 0; i < maxArgsCount; i++)
+        {
+#>
+            CreateActionCaller_<#= i #>,
+<#
+        }
+#>
+        };
+
+<#      for (int i = 0; i < maxArgsCount; i++)
+        {
+            string comma = new string(',', i);
+#>
+        static Type CreateActionCaller_<#= i #>(Type[] types)
+        {
+            Type genericType = typeof(ActionMethodCaller<<#= comma #>>);
+            return genericType.MakeGenericType(types);
+        }
+
+<#
+        }
+#>
+    }
+
+    static class ActionStaticCallerCreator
+    {
+        public static Func<Type[], Type>[] CreateDelgates = new Func<Type[], Type>[]
+        {
+<#      for (int i = 0; i < maxArgsCount; i++)
+        {
+#>
+            CreateActionCaller_<#= i #>,
+<#
+        }
+#>
+        };
+
+<#      for (int i = 0; i < maxArgsCount; i++)
+        {
+            string comma = i == 0 ? string.Empty : "<" + new string(',', i - 1) + ">";
+#>
+        static Type CreateActionCaller_<#= i #>(Type[] types)
+        {
+<#
+            if (i == 0)
+            {
+#>
+            return typeof(ActionStaticMethodCaller);
+<#
+            }
+            else
+            {
+#>
+            Type genericType = typeof(ActionStaticMethodCaller<#= comma #>);
+            return genericType.MakeGenericType(types);
+<#
+            }
+#>
+        }
+
+<#
+        }
+#>
+    }
+
+    static class FuncCallerCreator
+    {
+        public static Func<Type[], Type>[] CreateDelgates = new Func<Type[], Type>[]
+        {
+<#      for (int i = 0; i < maxArgsCount; i++)
+        {
+#>
+            CreateFuncCaller_<#= i #>,
+<#
+        }
+#>
+        };
+
+<#      for (int i = 0; i < maxArgsCount; i++)
+        {
+            string comma = new string(',', i + 1);
+#>
+        static Type CreateFuncCaller_<#= i #>(Type[] types)
+        {
+            Type genericType = typeof(FuncMethodCaller<<#= comma #>>);
+            return genericType.MakeGenericType(types);
+        }
+
+<#
+        }
+#>
+    }
+
+    static class FuncStaticCallerCreator
+    {
+        public static Func<Type[], Type>[] CreateDelgates = new Func<Type[], Type>[]
+        {
+<#      for (int i = 0; i < maxArgsCount; i++)
+        {
+#>
+            CreateFuncCaller_<#= i #>,
+<#
+        }
+#>
+        };
+
+<#      for (int i = 0; i < maxArgsCount; i++)
+        {
+            string comma = "<" + new string(',', i) + ">";
+#>
+        static Type CreateFuncCaller_<#= i #>(Type[] types)
+        {
+            Type genericType = typeof(FuncStaticMethodCaller<#= comma #>);
+            return genericType.MakeGenericType(types);
+        }
+
+<#
+        }
+#>
+    }
+
+
+<#
+    for (int i = 0; i < maxArgsCount; i++)
+    {
+        string[] paramStrs = new string[i + 1];
+        paramStrs[0] = "Cls";
+        for (int j = 0; j < i; j++)
+        {
+            paramStrs[j + 1] = string.Format("T{0}", j + 1);
+        }
+        string genericParam = string.Join(", ", paramStrs);
+
+        string staticArgs = string.Join(", ", paramStrs.Skip(1).ToArray());
+        string staticGenericParam = staticArgs == string.Empty ? "" : "<" + staticArgs + ">";
+
+        string checkParams = string.Join(", ", paramStrs.Skip(1).ToArray());
+
+#>
+    class ActionMethodCaller<<#= genericParam #>> : IMethodCaller
+    {
+        private readonly Action<<#= genericParam #>> _action;
+
+        public ActionMethodCaller(MethodInfo info)
+        {
+            _action = (Action<<#= genericParam #>>)Delegate.CreateDelegate(typeof(Action<<#= genericParam #>>), info);
+        }
+
+        public bool Check(IntPtr args)
+        {
+            return <#= checkParams == string.Empty ? "true" : string.Format("TypeCheck.Check<{0}>(args)", checkParams) #>;
+        }
+
+        public IntPtr Call(IntPtr self, IntPtr args)
+        {
+            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+<#
+            string[] callParams = new string[i + 1];
+            callParams[0] = "(Cls)clrObj.inst";
+            PushIndent("            ");
+            for (int j = 0; j < i; j++)
+            {
+                int index = j + 1;
+                string s = string.Format("T{0} arg_{1} = ArgParser.Extract<T{2}>(args, {3});",
+                    index, index, index, j);
+                WriteLine(s);
+                callParams[index] = string.Format("arg_{0}", index);
+            }
+            WriteLine("_action({0});", string.Join(", ", callParams));
+            PopIndent();
+#>
+            Runtime.Py_IncRef(Runtime.PyNone);
+            return Runtime.PyNone;
+        }
+    }
+
+    class ActionStaticMethodCaller<#= staticGenericParam #> : IMethodCaller
+    {
+        private readonly Action<#= staticGenericParam #> _action;
+
+        public ActionStaticMethodCaller(MethodInfo info)
+        {
+            _action = (Action<#= staticGenericParam #>)Delegate.CreateDelegate(typeof(Action<#= staticGenericParam #>), info);
+        }
+
+        public bool Check(IntPtr args)
+        {
+            return <#= checkParams == string.Empty ? "true" : string.Format("TypeCheck.Check<{0}>(args)", checkParams) #>;
+        }
+
+        public IntPtr Call(IntPtr self, IntPtr args)
+        {
+<#
+            callParams = new string[i];
+            PushIndent("            ");
+            for (int j = 0; j < i; j++)
+            {
+                int index = j + 1;
+                string s = string.Format("T{0} arg_{1} = ArgParser.Extract<T{2}>(args, {3});",
+                    index, index, index, j);
+                WriteLine(s);
+                callParams[j] = string.Format("arg_{0}", index);
+            }
+            WriteLine("_action({0});", string.Join(", ", callParams));
+            PopIndent();
+#>
+            Runtime.Py_IncRef(Runtime.PyNone);
+            return Runtime.PyNone;
+        }
+    }
+
+<#
+    }
+#>
+
+
+
+<#
+    for (int i = 0; i < maxArgsCount; i++)
+    {
+        string[] paramStrs = new string[i + 2];
+        paramStrs[0] = "Cls";
+        for (int j = 0; j < i; j++)
+        {
+            paramStrs[j + 1] = string.Format("T{0}", j + 1);
+        }
+        paramStrs[i + 1] = "TResult";
+        string genericParam = string.Join(", ", paramStrs);
+        string staticGenericParam = string.Join(", ", paramStrs.Skip(1).ToArray());
+
+        string checkParams = string.Join(", ", paramStrs.Skip(1).Take(i).ToArray());
+
+#>
+    class FuncMethodCaller<<#= genericParam #>> : IMethodCaller
+    {
+        private readonly Func<<#= genericParam #>> _func;
+
+        public FuncMethodCaller(MethodInfo info)
+        {
+            _func = (Func<<#= genericParam #>>)Delegate.CreateDelegate(typeof(Func<<#= genericParam #>>), info);
+        }
+
+        public bool Check(IntPtr args)
+        {
+            return <#= checkParams == string.Empty ? "true" : string.Format("TypeCheck.Check<{0}>(args)", checkParams) #>;
+        }
+
+        public IntPtr Call(IntPtr self, IntPtr args)
+        {
+            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+<#
+            string[] callParams = new string[i + 1];
+            callParams[0] = "(Cls)clrObj.inst";
+            PushIndent("            ");
+            for (int j = 0; j < i; j++)
+            {
+                int index = j + 1;
+                string s = string.Format("T{0} arg_{1} = ArgParser.Extract<T{2}>(args, {3});",
+                    index, index, index, j);
+                WriteLine(s);
+                callParams[index] = string.Format("arg_{0}", index);
+            }
+            WriteLine("TResult result = _func({0});", string.Join(", ", callParams));
+            PopIndent();
+#>
+            return result.ToPythonPtr();
+        }
+    }
+
+    class FuncStaticMethodCaller<<#= staticGenericParam #>> : IMethodCaller
+    {
+        private readonly Func<<#= staticGenericParam #>> _func;
+
+        public FuncStaticMethodCaller(MethodInfo info)
+        {
+            _func = (Func<<#= staticGenericParam #>>)Delegate.CreateDelegate(typeof(Func<<#= staticGenericParam #>>), info);
+        }
+
+        public bool Check(IntPtr args)
+        {
+            return <#= checkParams == string.Empty ? "true" : string.Format("TypeCheck.Check<{0}>(args)", checkParams) #>;
+        }
+
+        public IntPtr Call(IntPtr self, IntPtr args)
+        {
+<#
+            callParams = new string[i];
+            PushIndent("            ");
+            for (int j = 0; j < i; j++)
+            {
+                int index = j + 1;
+                string s = string.Format("T{0} arg_{1} = ArgParser.Extract<T{2}>(args, {3});",
+                    index, index, index, j);
+                WriteLine(s);
+                callParams[j] = string.Format("arg_{0}", index);
+            }
+            WriteLine("TResult result = _func({0});", string.Join(", ", callParams));
+            PopIndent();
+#>
+            return result.ToPythonPtr();
+        }
+    }
+
+<#
+    }
+#>
+}

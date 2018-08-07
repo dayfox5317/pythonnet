@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
@@ -265,6 +265,18 @@ namespace Python.Runtime
             {
                 return Exceptions.RaiseTypeError(e.Message);
             }
+        }
+
+        internal static IntPtr CreateMethodDef(string name, IntPtr func, int flags, string doc = null)
+        {
+            IntPtr mdef = Runtime.PyMem_Malloc(4 * IntPtr.Size);
+            WriteMethodDef(mdef, name, func, flags, doc);
+            return mdef;
+        }
+
+        internal static void FreeMethodDef(IntPtr mdef)
+        {
+            Runtime.PyMem_Free(mdef);
         }
 
         internal static IntPtr WriteMethodDef(IntPtr mdef, IntPtr name, IntPtr func, int flags, IntPtr doc)

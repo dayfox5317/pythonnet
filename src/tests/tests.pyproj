@@ -5,14 +5,13 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{250c535c-c060-4f0c-bd80-41f2bf373565}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>runtests.py</StartupFile>
+    <StartupFile>I:\Projects\pythonnet_1\src\asd.py</StartupFile>
     <SearchPath>..\..\</SearchPath>
-    <WorkingDirectory>.</WorkingDirectory>
+    <WorkingDirectory>I:\Projects\pythonnet_1\src</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
-    <InterpreterId />
-    <InterpreterVersion />
+    <IsWindowsApplication>False</IsWindowsApplication>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'DebugMono'" />
   <PropertyGroup Condition="'$(Configuration)' == 'DebugWin'" />
@@ -24,7 +23,6 @@
   <PropertyGroup Condition="'$(Configuration)' == 'ReleaseWinPY3'" />
   <PropertyGroup>
     <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
-    <PtvsTargetsFile>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets</PtvsTargetsFile>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="__init__.py" />
@@ -65,6 +63,5 @@
   <ItemGroup>
     <Folder Include="fixtures" />
   </ItemGroup>
-  <Import Project="$(PtvsTargetsFile)" Condition="Exists($(PtvsTargetsFile))" />
-  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" Condition="!Exists($(PtvsTargetsFile))" />
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
 </Project>

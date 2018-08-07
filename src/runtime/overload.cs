@@ -44,6 +44,7 @@ namespace Python.Runtime
             }
 
             var mb = new MethodBinding(self.m, self.target) { info = mi };
+            Runtime.XIncref(mb.pyHandle);
             return mb.pyHandle;
         }
 

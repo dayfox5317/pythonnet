@@ -1,8 +1,38 @@
+using Python.Runtime.Binder;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Linq;
 
 namespace Python.Runtime
 {
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate IntPtr PyCFunction(IntPtr self, IntPtr args);
+
+    enum METH
+    {
+        METH_VARARGS = 0x0001,
+        METH_KEYWORDS = 0x0002,
+        METH_NOARGS  = 0x0004,
+        METH_O       = 0x0008,
+        METH_CLASS   = 0x0010,
+        METH_STATIC  = 0x0020,
+        METH_COEXIST = 0x0040,
+        METH_FASTCALL = 0x0080
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+    struct PyMethodDef
+    {
+        public IntPtr ml_name;    /* The name of the built-in function/method */
+        public IntPtr ml_meth;    /* The C function that implements it */
+        public int ml_flags;      /* Combination of METH_xxx flags, which mostly
+                                     describe the args expected by the C func */
+        public IntPtr ml_doc;     /* The __doc__ attribute, or NULL */
+    }
+
     /// <summary>
     /// Implements a Python type that represents a CLR method. Method objects
     /// support a subscript syntax [] to allow explicit overload selection.
@@ -202,6 +232,394 @@ namespace Python.Runtime
                 Runtime.XDecref(self.unbound.pyHandle);
             }
             ExtensionType.FinalizeObject(self);
+        }
+    }
+
+    internal static class BoundMethodPool
+    {
+        private const int MaxNumFree = 256;
+        private static DelegateBoundMethodObject[] _cache = new DelegateBoundMethodObject[MaxNumFree];
+        private static DelegateBoundMethodObject _freeObj = null;
+        private static int _numFree = 0;
+
+        public static DelegateBoundMethodObject NewBoundMethod(IntPtr target, DelegateCallableObject caller)
+        {
+            DelegateBoundMethodObject boundMethod;
+            System.Diagnostics.Debug.Assert(_cache[0] == null);
+            if (_numFree != 0)
+            {
+                boundMethod = _freeObj;
+                boundMethod.Target = target;
+                boundMethod.Caller = caller;
+                _freeObj = _cache[--_numFree];
+                return boundMethod;
+            }
+            boundMethod = new DelegateBoundMethodObject(target, caller);
+            return boundMethod;
+        }
+
+        public static bool Recycle(DelegateBoundMethodObject method)
+        {
+            System.Diagnostics.Debug.Assert(_cache[0] == null);
+            if (_numFree >= MaxNumFree)
+            {
+                return false;
+            }
+            method.Target = IntPtr.Zero;
+            method.Caller = null;
+            _cache[_numFree++] = _freeObj;
+            _freeObj = method;
+            return true;
+        }
+
+        public static void ClearFreeList()
+        {
+            ExtensionType.FinalizeObject(_freeObj);
+            _freeObj = null;
+            for (int i = 1; i < _numFree; i++)
+            {
+                if (_cache[i] != null)
+                {
+                    ExtensionType.FinalizeObject(_cache[i]);
+                    _cache[i] = null;
+                }
+            }
+        }
+    }
+
+
+    class DelegateCallableObject : IDisposable
+    {
+        PyCFunction _func;
+        IntPtr _methodDefPtr;
+        Dictionary<int, List<Method.IMethodCaller>> _callers;
+
+        public DelegateCallableObject(string name)
+        {
+            _func = PyCall;
+            _callers = new Dictionary<int, List<Method.IMethodCaller>>();
+            IntPtr funcPtr = Marshal.GetFunctionPointerForDelegate(_func);
+            _methodDefPtr = TypeManager.CreateMethodDef(name, funcPtr, (int)METH.METH_VARARGS);
+        }
+
+        public bool Empty()
+        {
+            return _callers.Count == 0;
+        }
+
+        public IntPtr GetBoundMethodPointer(IntPtr ob)
+        {
+            return Runtime.PyCFunction_NewEx(_methodDefPtr, ob, IntPtr.Zero);
+        }
+
+        public Method.IMethodCaller AddMethod(Type boundType, MethodInfo mi)
+        {
+            Type[] paramTypes = mi.GetParameters()
+                .Select(T => T.ParameterType).ToArray();
+            Type funcType = CreateDelegateType(boundType,
+                mi.ReturnType, paramTypes);
+            var caller = (Method.IMethodCaller)Activator.CreateInstance(funcType, mi);
+            List<Method.IMethodCaller> callers;
+            int paramCount = paramTypes.Length;
+            if (!_callers.TryGetValue(paramCount, out callers))
+            {
+                callers = new List<Method.IMethodCaller>();
+                _callers[paramCount] = callers;
+            }
+            callers.Add(caller);
+            return caller;
+        }
+
+        public Method.IMethodCaller AddStaticMethod(MethodInfo mi)
+        {
+            Type[] paramTypes = mi.GetParameters()
+                .Select(T => T.ParameterType).ToArray();
+            Type funcType = CreateStaticDelegateType(mi.ReturnType, paramTypes);
+            var caller = (Method.IMethodCaller)Activator.CreateInstance(funcType, mi);
+            List<Method.IMethodCaller> callers;
+            int paramCount = paramTypes.Length;
+            if (!_callers.TryGetValue(paramCount, out callers))
+            {
+                callers = new List<Method.IMethodCaller>();
+                _callers[paramCount] = callers;
+            }
+            callers.Add(caller);
+            return caller;
+        }
+
+        public IntPtr PyCall(IntPtr self, IntPtr args)
+        {
+            int argc = Runtime.PyTuple_Size(args);
+            // TODO: params array
+            List<Method.IMethodCaller> callerList;
+            if (!_callers.TryGetValue(argc, out callerList))
+            {
+                return Exceptions.RaiseTypeError("No match found for given type params");
+            }
+            foreach (var caller in callerList)
+            {
+                if (!caller.Check(args))
+                {
+                    continue;
+                }
+                try
+                {
+                    return caller.Call(self, args);
+                }
+                catch (Exception e)
+                {
+                    if (e.InnerException != null)
+                    {
+                        e = e.InnerException;
+                    }
+                    Exceptions.SetError(e);
+                    return IntPtr.Zero;
+                }
+            }
+            return Exceptions.RaiseTypeError("No match found for given type params");
+            //return IntPtr.Zero;
+        }
+
+        internal static Type CreateDelegateType(Type type, Type returnType, Type[] paramTypes)
+        {
+            Type[] types;
+            Type func;
+            if (returnType == typeof(void))
+            {
+                types = new Type[paramTypes.Length + 1];
+                types[0] = type;
+                paramTypes.CopyTo(types, 1);
+                func = Method.ActionCallerCreator.CreateDelgates[paramTypes.Length](types);
+            }
+            else
+            {
+                types = new Type[paramTypes.Length + 2];
+                types[0] = type;
+                paramTypes.CopyTo(types, 1);
+                types[paramTypes.Length + 1] = returnType;
+                func = Method.FuncCallerCreator.CreateDelgates[paramTypes.Length](types);
+            }
+            return func;
+        }
+
+        private static Type CreateStaticDelegateType(Type returnType, Type[] paramTypes)
+        {
+            Type[] types;
+            Type func;
+            if (returnType == typeof(void))
+            {
+                types = new Type[paramTypes.Length];
+                paramTypes.CopyTo(types, 0);
+                func = Method.ActionStaticCallerCreator.CreateDelgates[paramTypes.Length](types);
+            }
+            else
+            {
+                types = new Type[paramTypes.Length + 1];
+                paramTypes.CopyTo(types, 0);
+                types[paramTypes.Length] = returnType;
+                func = Method.FuncStaticCallerCreator.CreateDelgates[paramTypes.Length](types);
+            }
+            return func;
+        }
+
+        public void Dispose()
+        {
+            TypeManager.FreeMethodDef(_methodDefPtr);
+            _methodDefPtr = IntPtr.Zero;
+        }
+    }
+
+
+    static class MethodCreator
+    {
+        public static ExtensionType CreateDelegateMethod(Type type, string name, MethodInfo[] info)
+        {
+            if (IsIncompatibleType(type)) return null;
+            for (int i = 0; i < info.Length; i++)
+            {
+                if (!CanCreateStaticBinding(info[i]))
+                {
+                    return null;
+                }
+            }
+            var caller = new DelegateCallableObject(name);
+            bool hasGeneric = false;
+            for (int i = 0; i < info.Length; i++)
+            {
+                var mi = info[i];
+                if (mi.ReturnType.IsPointer)
+                {
+                    continue;
+                }
+                if (mi.GetParameters().Any(T=>T.ParameterType.IsPointer))
+                {
+                    continue;
+                }
+                if (mi.IsGenericMethod)
+                {
+                    hasGeneric = true;
+                    continue;
+                }
+                if (mi.IsStatic)
+                {
+                    caller.AddStaticMethod(mi);
+                }
+                else
+                {
+                    caller.AddMethod(type, mi);
+                }
+            }
+            ExtensionType binder;
+            if (hasGeneric)
+            {
+                binder = new DelegateGenericMethodObject(caller, type, info);
+            }
+            else
+            {
+                binder = new DelegateMethodObject(caller);
+            }
+            return binder;
+        }
+
+        private static bool CanCreateStaticBinding(MethodInfo mi)
+        {
+            if (IsIncompatibleType(mi.ReturnType))
+            {
+                return false;
+            }
+            if (mi.GetParameters().Any(T => IsIncompatibleType(T.ParameterType)))
+            {
+                return false;
+            }
+            return true;
+        }
+
+        private static bool IsIncompatibleType(Type type)
+        {
+            if (type.IsPointer) return true;
+            if (type.IsByRef) return true;
+            // TODO: make generic compat
+            if (type.ContainsGenericParameters) return true;
+            return false;
+        }
+    }
+
+
+    // TODO: static method
+    internal class DelegateMethodObject : ExtensionType
+    {
+        private DelegateCallableObject _caller;
+        public DelegateCallableObject Caller { get { return _caller; } }
+
+        public DelegateMethodObject(DelegateCallableObject caller)
+        {
+            _caller = caller;
+        }
+
+        public bool IsCallable()
+        {
+            return !_caller.Empty();
+        }
+
+        public static IntPtr tp_descr_get(IntPtr ds, IntPtr ob, IntPtr tp)
+        {
+            var self = (DelegateMethodObject)GetManagedObject(ds);
+            var boundMethod = BoundMethodPool.NewBoundMethod(ob, self._caller);
+            return boundMethod.pyHandle;
+        }
+
+        public static IntPtr tp_call(IntPtr ob, IntPtr args, IntPtr kw)
+        {
+            var self = (DelegateMethodObject)GetManagedObject(ob);
+            return self._caller.PyCall(ob, args);
+        }
+    }
+
+    internal class DelegateBoundMethodObject : ExtensionType
+    {
+        private DelegateCallableObject _caller;
+        //public DelegateCallableObject Caller { get { return _caller; } }
+
+        public IntPtr Target
+        {
+            get
+            {
+                return _target;
+            }
+
+            set
+            {
+                _target = value;
+            }
+        }
+
+        public DelegateCallableObject Caller
+        {
+            get
+            {
+                return _caller;
+            }
+
+            internal set
+            {
+                _caller = value;
+            }
+        }
+
+        private IntPtr _target;
+
+        public DelegateBoundMethodObject(IntPtr target, DelegateCallableObject caller)
+        {
+            _target = target;
+            _caller = caller;
+        }
+
+        public bool IsCallable()
+        {
+            return _caller != null && !_caller.Empty();
+        }
+
+        public static IntPtr tp_call(IntPtr ob, IntPtr args, IntPtr kw)
+        {
+            var self = (DelegateBoundMethodObject)GetManagedObject(ob);
+            return self._caller.PyCall(self._target, args);
+        }
+
+        public new static void tp_dealloc(IntPtr ob)
+        {
+            var self = (DelegateBoundMethodObject)GetManagedObject(ob);
+            if (BoundMethodPool.Recycle(self))
+            {
+                return;
+            }
+            FinalizeObject(self);
+        }
+    }
+
+    internal class DelegateGenericMethodObject : DelegateMethodObject
+    {
+        private MethodInfo[] _methods;
+        private Type _boundType;
+
+        public DelegateGenericMethodObject(DelegateCallableObject caller,
+            Type type, MethodInfo[] infos) : base(caller)
+        {
+            _boundType = type;
+            _methods = infos;
+        }
+
+        public new static IntPtr tp_descr_get(IntPtr ds, IntPtr ob, IntPtr tp)
+        {
+            var self = (DelegateGenericMethodObject)GetManagedObject(ds);
+            var binding = new DelegateMethodBinding(self._boundType, ob,
+                self._methods, self.Caller);
+            return binding.pyHandle;
+        }
+
+        public new static IntPtr tp_call(IntPtr ob, IntPtr args, IntPtr kw)
+        {
+            var self = (DelegateGenericMethodObject)GetManagedObject(ob);
+            return self.Caller.PyCall(ob, args);
         }
     }
 }

@@ -328,7 +328,7 @@ namespace Python.Runtime
 
             if (obType.IsGenericType && obType.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
-                if( value == Runtime.PyNone )
+                if (value == Runtime.PyNone)
                 {
                     result = null;
                     return true;
@@ -917,6 +917,60 @@ namespace Python.Runtime
 
             return false;
         }
+
+        internal static int ToInt32(IntPtr op)
+        {
+            long ll = (long)Runtime.PyLong_AsLongLong(op);
+            if (ll == -1 && Exceptions.ErrorOccurred())
+            {
+                throw new PythonException();
+            }
+            if (ll > Int32.MaxValue || ll < Int32.MinValue)
+            {
+                Exceptions.SetError(Exceptions.OverflowError, "value too large to convert");
+                throw new PythonException();
+            }
+            return (int)ll;
+        }
+
+        internal static uint ToUInt32(IntPtr op)
+        {
+            // TODO: overflow
+            uint ui = (uint)Runtime.PyLong_AsUnsignedLong(op);
+            return ui;
+        }
+
+        internal static long ToInt64(IntPtr op)
+        {
+            // TODO: overflow
+            return Runtime.PyLong_AsLongLong(op);
+        }
+
+        internal static ulong ToUInt64(IntPtr op)
+        {
+            // TODO: overflow
+            return Runtime.PyLong_AsUnsignedLongLong(op);
+        }
+
+        internal static double ToDouble(IntPtr op)
+        {
+            double result = Runtime.PyFloat_AsDouble(op);
+            return result;
+        }
+
+        internal static char ToChar(IntPtr op)
+        {
+            // TODO: other types
+            if (!(Runtime.PyObject_TypeCheck(op, Runtime.PyUnicodeType) &&
+                Runtime.PyUnicode_GetSize(op) == 1))
+            {
+                throw new Exception("Type error");
+            }
+            op = Runtime.PyUnicode_AsUnicode(op);
+            Char[] buff = new Char[1];
+            Marshal.Copy(op, buff, 0, 1);
+            return buff[0];
+        }
     }
 
     public static class ConverterExtension
@@ -924,6 +978,121 @@ namespace Python.Runtime
         public static PyObject ToPython(this object o)
         {
             return new PyObject(Converter.ToPython(o, o?.GetType()));
+        }
+
+        public static IntPtr ToPythonPtr(this object o)
+        {
+            return Converter.ToPython(o, o?.GetType());
+        }
+    }
+
+    public static class ArgParser
+    {
+        public static string ExtractString(IntPtr args, int index)
+        {
+            IntPtr op = Runtime.PyTuple_GetItem(args, index);
+            return Runtime.GetManagedString(op);
+        }
+
+        public static char ExtractChar(IntPtr args, int index)
+        {
+            IntPtr op = Runtime.PyTuple_GetItem(args, index);
+            return Converter.ToChar(op);
+        }
+
+        public static int ExtractInt32(IntPtr args, int index)
+        {
+            IntPtr op = Runtime.PyTuple_GetItem(args, index);
+            return Converter.ToInt32(op);
+        }
+
+        [CLSCompliant(false)]
+        public static uint ExtractUInt32(IntPtr args, int index)
+        {
+            IntPtr op = Runtime.PyTuple_GetItem(args, index);
+            return Converter.ToUInt32(op);
+        }
+
+        public static long ExtractInt64(IntPtr args, int index)
+        {
+            IntPtr op = Runtime.PyTuple_GetItem(args, index);
+            return Converter.ToInt64(op);
+        }
+
+        [CLSCompliant(false)]
+        public static ulong ExtractUInt64(IntPtr args, int index)
+        {
+            IntPtr op = Runtime.PyTuple_GetItem(args, index);
+            return Converter.ToUInt64(op);
+        }
+
+        public static double ExtractDouble(IntPtr args, int index)
+        {
+            IntPtr op = Runtime.PyTuple_GetItem(args, index);
+            return Converter.ToDouble(op);
+        }
+
+        public static float ExtractSingle(IntPtr args, int index)
+        {
+            IntPtr op = Runtime.PyTuple_GetItem(args, index);
+            return (float)Converter.ToDouble(op);
+        }
+
+        public static decimal ExtractDecimal(IntPtr args, int index)
+        {
+            IntPtr op = Runtime.PyTuple_GetItem(args, index);
+            return Convert.ToDecimal(Converter.ToDouble(op));
+        }
+
+        public static bool ExtractBoolean(IntPtr args, int index)
+        {
+            IntPtr op = Runtime.PyTuple_GetItem(args, index);
+            return Runtime.PyObject_IsTrue(op) != 0;
+        }
+
+        public static T ExtractObject<T>(IntPtr args, int index)
+        {
+            IntPtr op = Runtime.PyTuple_GetItem(args, index);
+            var clrObj = (CLRObject)ManagedType.GetManagedObject(op);
+            return (T)clrObj.inst;
+        }
+
+        public static T Extract<T>(IntPtr args, int index)
+        {
+            IntPtr op = Runtime.PyTuple_GetItem(args, index);
+            return ValueConverter<T>.Get(op);
+        }
+    }
+
+    static class ValueConverterInitializer
+    {
+        internal static readonly bool InitFlag = true;
+
+        static ValueConverterInitializer()
+        {
+            ValueConverter<int>.Get = Converter.ToInt32;
+            ValueConverter<uint>.Get = Converter.ToUInt32;
+
+            ValueConverter<long>.Get = Converter.ToInt64;
+            ValueConverter<ulong>.Get = Converter.ToUInt64;
+
+            ValueConverter<string>.Get = Runtime.GetManagedString;
+            ValueConverter<bool>.Get = (op) => Runtime.PyObject_IsTrue(op) != 0;
+            ValueConverter<float>.Get = (op) => (float)Converter.ToDouble(op);
+            ValueConverter<double>.Get = Converter.ToDouble;
+            ValueConverter<decimal>.Get = (op) => Convert.ToDecimal(Converter.ToDouble(op));
+        }
+    }
+
+    static class ValueConverter<T>
+    {
+        static internal Func<IntPtr, T> Get = DefaultGetter;
+        static readonly bool _ = ValueConverterInitializer.InitFlag;
+
+        private static T DefaultGetter(IntPtr op)
+        {
+            var clrObj = (CLRObject)ManagedType.GetManagedObject(op);
+            return (T)clrObj.inst;
         }
     }
 }

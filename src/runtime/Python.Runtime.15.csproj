@@ -122,6 +122,34 @@
     <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.5" Version="1.0.1" ExcludeAssets="All" PrivateAssets="All" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="methodcaller.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>methodcaller.cs</LastGenOutput>
+    </None>
+    <None Update="typecheck.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>typecheck.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="methodcaller.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>methodcaller.tt</DependentUpon>
+    </Compile>
+    <Compile Update="typecheck.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>typecheck.tt</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>

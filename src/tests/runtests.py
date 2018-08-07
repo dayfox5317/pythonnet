@@ -9,6 +9,7 @@ import sys
 import pytest
 
 from ._compat import input
+sys.path.append("I:/Projects/pythonnet_1/src/testing/bin")
 
 try:
     import System

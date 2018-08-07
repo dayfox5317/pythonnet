@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace Python.Runtime
@@ -97,6 +98,27 @@ namespace Python.Runtime
             return null;
         }
 
+        internal static IEnumerable<MethodInfo> MatchParamertersMethods(MethodInfo[] mi, Type[] tp)
+        {
+            if (tp == null)
+            {
+                yield break;
+            }
+            int count = tp.Length;
+            foreach (MethodInfo t in mi)
+            {
+                if (!t.IsGenericMethodDefinition)
+                {
+                    continue;
+                }
+                Type[] args = t.GetGenericArguments();
+                if (args.Length != count)
+                {
+                    continue;
+                }
+                yield return t.MakeGenericMethod(tp);
+            }
+        }
 
         /// <summary>
         /// Given a sequence of MethodInfo and two sequences of type parameters,
@@ -507,12 +529,7 @@ namespace Python.Runtime
 
             if (binding == null)
             {
-                var value = "No method matches given arguments";
-                if (methodinfo != null && methodinfo.Length > 0)
-                {
-                    value += $" for {methodinfo[0].Name}";
-                }
-                Exceptions.SetError(Exceptions.TypeError, value);
+                Exceptions.SetError(Exceptions.TypeError, "No method matches given arguments");
                 return IntPtr.Zero;
             }
 

@@ -1,0 +1,45 @@
+<#@ template  debug="true" hostSpecific="true" #>
+<#@ output extension=".cs" #>
+<#@ Assembly Name="System.Core" #>
+<#@ Assembly Name="System.Windows.Forms" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Diagnostics" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Collections" #>
+<#@ import namespace="System.Collections.Generic" #> 
+<#
+    const int maxArgsCount = 16;
+
+#>
+using System;
+
+namespace Python.Runtime.Binder
+{
+    static partial class TypeCheck
+    {
+<#
+        for (int i = 1; i <= maxArgsCount; i++)
+    {
+		string[] paramStrs = new string[i];
+        string[] checkStrs = new string[i];
+        for (int j = 0; j < i; j++)
+        {
+            paramStrs[j] = string.Format("T{0}", j + 1);
+            checkStrs[j] =string.Format(
+                "TypeTraits<T{0}>.Is(Runtime.PyTuple_GetItem(args, {1}))",
+                j + 1, j);
+        }
+        string genericParam = string.Join(", ", paramStrs);
+        string checkStr = string.Join(" && ", checkStrs);
+#>
+        public static bool Check<<#= genericParam #>>(IntPtr args)
+        {
+            return <#= checkStr #>;
+        }
+
+<#
+    }
+#>
+    }
+}

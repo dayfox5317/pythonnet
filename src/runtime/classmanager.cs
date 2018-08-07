@@ -51,6 +51,10 @@ namespace Python.Runtime
             // Initialize the object later, as this might call this GetClass method
             // recursively (for example when a nested class inherits its declaring class...)
             InitClassBase(type, cb);
+            if (cb.pyHandle == IntPtr.Zero)
+            {
+                Console.WriteLine();
+            }
             return cb;
         }
 
@@ -119,7 +123,12 @@ namespace Python.Runtime
             // information, including generating the member descriptors
             // that we'll be putting in the Python class __dict__.
 
-            ClassInfo info = GetClassInfo(type);
+            ClassInfo info = Binder.NativeBinder.GetStaticBindClassInfo(type);
+            if (info == null)
+            {
+                info = GetClassInfo(type);
+            }
+
 
             impl.indexer = info.indexer;
 
@@ -194,7 +203,7 @@ namespace Python.Runtime
             var methods = new Hashtable();
             ArrayList list;
             MethodInfo meth;
-            ManagedType ob;
+            ManagedType ob = null;
             string name;
             object item;
             Type tp;
@@ -332,7 +341,26 @@ namespace Python.Runtime
                             continue;
                         }
 
-                        ob = new PropertyObject(pi);
+                        //if (!pi.GetGetMethod(true).IsStatic)
+                        //{
+                        //    Type genericType = typeof(InstancePropertyObject<,>);
+                        //    Type impType  = genericType.MakeGenericType(pi.DeclaringType, pi.PropertyType);
+                        //    System.Diagnostics.Trace.WriteLine(impType);
+                        //    try
+                        //    {
+                        //        ob = (ManagedType)Activator.CreateInstance(impType, pi);
+                        //    }
+                        //    catch (Exception e)
+                        //    {
+                        //        Console.WriteLine(e);
+                        //        ob = new PropertyObject(pi);
+                        //    }
+                        //}
+                        //else
+                        {
+                            ob = new PropertyObject(pi);
+                        }
+
                         ci.members[pi.Name] = ob;
                         continue;
 
@@ -379,8 +407,34 @@ namespace Python.Runtime
                 list = (ArrayList)iter.Value;
 
                 var mlist = (MethodInfo[])list.ToArray(typeof(MethodInfo));
-
-                ob = new MethodObject(type, name, mlist);
+                bool ok = true;
+                foreach (var item1 in mlist)
+                {
+                    if (item1.IsStatic)
+                    {
+                        ok = false; break;
+                    }
+                }
+                //if (ok)
+                try
+                {
+                    //ob = new MethodObject(type, name, mlist);
+                    ob = MethodCreator.CreateDelegateMethod(type, name, mlist);
+                    if (ob == null)
+                    {
+                        ob = new MethodObject(type, name, mlist);
+                    }
+                }
+                catch (Exception e)
+                {
+                    //Console.WriteLine(type);
+                    //Console.WriteLine(name);
+                    //Console.WriteLine(e);
+                    ob = new MethodObject(type, name, mlist);
+                    //throw;
+                }
+                //else
+                //    ob = new MethodObject(type, name, mlist);
                 ci.members[name] = ob;
             }
 
@@ -393,7 +447,7 @@ namespace Python.Runtime
     {
         public Indexer indexer;
         public Hashtable members;
-
+        // TODO: refact
         internal ClassInfo(Type t)
         {
             members = new Hashtable();
