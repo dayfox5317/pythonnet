@@ -127,6 +127,10 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>methodcaller.cs</LastGenOutput>
     </None>
+    <None Update="tuplepacker.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>tuplepacker.cs</LastGenOutput>
+    </None>
     <None Update="typecheck.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>typecheck.cs</LastGenOutput>
@@ -142,6 +146,11 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>methodcaller.tt</DependentUpon>
+    </Compile>
+    <Compile Update="tuplepacker.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>tuplepacker.tt</DependentUpon>
     </Compile>
     <Compile Update="typecheck.cs">
       <DesignTime>True</DesignTime>

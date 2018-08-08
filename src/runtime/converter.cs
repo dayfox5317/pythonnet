@@ -1282,6 +1282,12 @@ namespace Python.Runtime
                 Runtime.XIncref(Runtime.PyFalse);
                 return Runtime.PyFalse;
             };
+
+            PyValueConverter<PyObject>.Convert = (value) =>
+            {
+                Runtime.XIncref(value.Handle);
+                return value.Handle;
+            };
         }
 
         internal static IntPtr Convert(object value)
@@ -1293,6 +1299,11 @@ namespace Python.Runtime
             }
             return PyValueConverter<object>.Convert(value);
         }
+
+        public static IntPtr Convert<T>(T value)
+        {
+            return PyValueConverter<T>.Convert(value);
+        }
     }
 
 
@@ -1302,6 +1313,13 @@ namespace Python.Runtime
 
         static IntPtr DefaultConverter(T value)
         {
+            // TODO: IPythonDerivedType
+            if (value == null)
+            {
+                Runtime.XIncref(Runtime.PyNone);
+                return Runtime.PyNone;
+            }
+            // FIXME: Just return a CLRObject?
             if (value is IEnumerable)
             {
                 IntPtr list = Runtime.PyList_New(0);
