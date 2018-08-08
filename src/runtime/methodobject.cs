@@ -349,19 +349,24 @@ namespace Python.Runtime
             {
                 return Exceptions.RaiseTypeError("No match found for given type params");
             }
-            if (_name == "set_Item")
+            if (_name == "EchoRange")
             {
                 Console.WriteLine();
             }
+            bool needValidate = callerList.Count > 1;
             foreach (var caller in callerList)
             {
-                if (!caller.Check(args))
+                if (needValidate && !caller.Check(args))
                 {
                     continue;
                 }
                 try
                 {
                     return caller.Call(self, args);
+                }
+                catch (ConvertException)
+                {
+                    return IntPtr.Zero;
                 }
                 catch (Exception e)
                 {

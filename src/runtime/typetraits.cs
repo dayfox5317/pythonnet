@@ -21,9 +21,11 @@ namespace Python.Runtime.Binder
             TypeTraits<string>.Is = Runtime.IsStringType;
             TypeTraits<bool>.Is = Runtime.PyBool_Check;
             TypeTraits<float>.Is = Runtime.PyFloat_Check;
+            // TODO: inplicit
             TypeTraits<double>.Is = Runtime.PyFloat_Check;
             TypeTraits<decimal>.Is = Runtime.PyFloat_Check;
             TypeTraits<object[]>.Is = Runtime.PySequence_Check;
+            TypeTraits<object>.Is = (op) => op != IntPtr.Zero;
             TypeTraits<PyObject>.Is = ManagedType.IsManagedType;
         }
     }

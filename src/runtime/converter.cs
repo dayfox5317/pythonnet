@@ -1081,6 +1081,19 @@ namespace Python.Runtime
             ValueConverter<float>.Get = (op) => (float)Converter.ToDouble(op);
             ValueConverter<double>.Get = Converter.ToDouble;
             ValueConverter<decimal>.Get = (op) => Convert.ToDecimal(Converter.ToDouble(op));
+
+            ValueConverter<PyObject>.Get = PyObjectConverter.Convert;
+        }
+    }
+
+    static class PyObjectConverter
+    {
+        static Type _type = typeof(PyObject);
+
+        public static PyObject Convert(IntPtr op)
+        {
+            Runtime.Py_IncRef(op);
+            return new PyObject(op);
         }
     }
 
@@ -1161,6 +1174,11 @@ namespace Python.Runtime
         }
     }
 
+    class ConvertException : Exception
+    {
+
+    }
+
     static class ValueConverter<T>
     {
         static Type _type = typeof(T);
@@ -1205,7 +1223,11 @@ namespace Python.Runtime
                 }
             }
             object result;
-            Converter.ToManagedValue(op, _type, out result, false);
+            //
+            if (!Converter.ToManagedValue(op, _type, out result, true))
+            {
+                throw new ConvertException();
+            }
             return (T)result;
             // TODO: raise TypeError
         }
