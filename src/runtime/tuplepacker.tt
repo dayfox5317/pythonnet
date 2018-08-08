@@ -1,0 +1,58 @@
+<#@ template  debug="true" hostSpecific="true" #>
+<#@ output extension=".cs" #>
+<#@ Assembly Name="System.Core" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.Linq" #>
+<#
+    const int paramCount = 10;
+#>
+using System;
+
+namespace Python.Runtime
+{
+    public static class TuplePacker
+    {
+<#
+    for (int i = 1; i <= paramCount; i++)
+    {
+        string[] paramsStr = new string[i];
+        string[] argsStr = new string[i];
+        for (int j = 0; j < i; j++)
+        {
+            int num = j + 1;
+            paramsStr[j] = string.Format("T{0}", num);
+            argsStr[j] = string.Format("T{0} a{1}", num, num);
+        }
+        string genericParam = string.Join(", ", paramsStr);
+        string argStr = string.Join(", ", argsStr);
+#>
+        public static IntPtr Pack<<#= genericParam #>>(<#= argStr #>)
+        {
+            IntPtr res = Runtime.PyTuple_New(<#= i #>);
+            if (res == IntPtr.Zero) return IntPtr.Zero;
+            try
+            {
+<#
+        for (int j = 1; j <= i; j++)
+        {
+#>
+                IntPtr item<#= j #> = PyValueConverter<<#= paramsStr[j - 1] #>>.Convert(a<#= j #>);
+                Runtime.PyTuple_SetItem(res, <#= j - 1 #>, item<#= j #>);
+<#
+        }
+#>
+            }
+            catch (Exception e)
+            {
+                Runtime.XDecref(res);
+                Exceptions.SetError(e);
+                return IntPtr.Zero;
+            }
+            return res;
+        }
+
+<#
+    }
+#>
+    }
+}
