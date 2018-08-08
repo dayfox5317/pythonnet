@@ -1250,4 +1250,68 @@ namespace Python.Runtime
         //    }
         //}
     }
+
+
+    static class PyValueConverterHelper
+    {
+        internal static Dictionary<Type, Func<object, IntPtr>> ConvertMap = new Dictionary<Type, Func<object, IntPtr>>();
+
+        static PyValueConverterHelper()
+        {
+            PyValueConverter<sbyte>.Convert = (value) => Runtime.PyInt_FromInt32(value);
+            PyValueConverter<byte>.Convert = (value) => Runtime.PyInt_FromInt32(value);
+            PyValueConverter<short>.Convert = (value) => Runtime.PyInt_FromInt32(value);
+            PyValueConverter<ushort>.Convert = (value) => Runtime.PyInt_FromInt32(value);
+            PyValueConverter<int>.Convert = Runtime.PyInt_FromInt32;
+            PyValueConverter<Int64>.Convert = Runtime.PyLong_FromLongLong;
+
+            PyValueConverter<uint>.Convert = Runtime.PyLong_FromUnsignedLong;
+            PyValueConverter<UInt64>.Convert = Runtime.PyLong_FromUnsignedLongLong;
+
+            PyValueConverter<float>.Convert = (value) => Runtime.PyFloat_FromDouble(value);
+            PyValueConverter<double>.Convert = Runtime.PyFloat_FromDouble;
+
+            PyValueConverter<string>.Convert = Runtime.PyUnicode_FromString;
+            PyValueConverter<bool>.Convert = (value) =>
+            {
+                if (value)
+                {
+                    Runtime.Py_IncRef(Runtime.PyTrue);
+                    return Runtime.PyTrue;
+                }
+                Runtime.XIncref(Runtime.PyFalse);
+                return Runtime.PyFalse;
+            };
+        }
+
+        internal static IntPtr Convert(object value)
+        {
+            Func<object, IntPtr> converter;
+            if (ConvertMap.TryGetValue(value.GetType(), out converter))
+            {
+                return converter(value);
+            }
+            return PyValueConverter<object>.Convert(value);
+        }
+    }
+
+
+    static class PyValueConverter<T>
+    {
+        public static Func<T, IntPtr> Convert = DefaultConverter;
+
+        static IntPtr DefaultConverter(T value)
+        {
+            if (value is IEnumerable)
+            {
+                IntPtr list = Runtime.PyList_New(0);
+                foreach (var item in (IEnumerable)value)
+                {
+                    IntPtr pyValue = PyValueConverterHelper.Convert(item);
+                    Runtime.PyList_Append(list, pyValue);
+                }
+            }
+            return CLRObject.GetInstHandle(value);
+        }
+    }
 }
