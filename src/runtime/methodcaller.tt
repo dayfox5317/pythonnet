@@ -193,10 +193,10 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
 <#
             string[] callParams = new string[i + 1];
-            callParams[0] = "(Cls)clrObj.inst";
+            callParams[0] = "clrObj";
             PushIndent("            ");
             for (int j = 0; j < i; j++)
             {
@@ -287,10 +287,10 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
 <#
             string[] callParams = new string[i + 1];
-            callParams[0] = "(Cls)clrObj.inst";
+            callParams[0] = "(Cls)clrObj";
             PushIndent("            ");
             for (int j = 0; j < i; j++)
             {
@@ -303,7 +303,7 @@ namespace Python.Runtime.Method
             WriteLine("TResult result = _func({0});", string.Join(", ", callParams));
             PopIndent();
 #>
-            return result.ToPythonPtr();
+            return PyValueConverter<TResult>.Convert(result);
         }
     }
 

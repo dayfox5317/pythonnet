@@ -246,6 +246,7 @@ namespace Python.Runtime
         {
             DelegateBoundMethodObject boundMethod;
             System.Diagnostics.Debug.Assert(_cache[0] == null);
+            Runtime.XIncref(target);
             if (_numFree != 0)
             {
                 boundMethod = _freeObj;
@@ -261,6 +262,7 @@ namespace Python.Runtime
         public static bool Recycle(DelegateBoundMethodObject method)
         {
             System.Diagnostics.Debug.Assert(_cache[0] == null);
+            Runtime.XDecref(method.Target);
             if (_numFree >= MaxNumFree)
             {
                 return false;
@@ -349,10 +351,6 @@ namespace Python.Runtime
             {
                 return Exceptions.RaiseTypeError("No match found for given type params");
             }
-            if (_name == "EchoRange")
-            {
-                Console.WriteLine();
-            }
             bool needValidate = callerList.Count > 1;
             foreach (var caller in callerList)
             {
@@ -374,6 +372,7 @@ namespace Python.Runtime
                     {
                         e = e.InnerException;
                     }
+                    Console.WriteLine(e);
                     Exceptions.SetError(e);
                     return IntPtr.Zero;
                 }
@@ -432,10 +431,6 @@ namespace Python.Runtime
     {
         public static ExtensionType CreateDelegateMethod(Type type, string name, MethodInfo[] info)
         {
-            if (name == "CreateInstance")
-            {
-                Console.WriteLine();
-            }
             if (IsIncompatibleType(type)) return null;
             for (int i = 0; i < info.Length; i++)
             {

@@ -1082,6 +1082,7 @@ namespace Python.Runtime
             ValueConverter<double>.Get = Converter.ToDouble;
             ValueConverter<decimal>.Get = (op) => Convert.ToDecimal(Converter.ToDouble(op));
 
+            //ValueConverter<Type>.Get = (op) => ((ClassBase)ManagedType.GetManagedObject(op)).type;
             ValueConverter<PyObject>.Get = PyObjectConverter.Convert;
         }
     }
@@ -1223,7 +1224,6 @@ namespace Python.Runtime
                 }
             }
             object result;
-            //
             if (!Converter.ToManagedValue(op, _type, out result, true))
             {
                 throw new ConvertException();
@@ -1271,7 +1271,15 @@ namespace Python.Runtime
             PyValueConverter<float>.Convert = (value) => Runtime.PyFloat_FromDouble(value);
             PyValueConverter<double>.Convert = Runtime.PyFloat_FromDouble;
 
-            PyValueConverter<string>.Convert = Runtime.PyUnicode_FromString;
+            PyValueConverter<string>.Convert = (value) =>
+            {
+                if (value == null)
+                {
+                    Runtime.XIncref(Runtime.PyNone);
+                    return Runtime.PyNone;
+                }
+                return Runtime.PyUnicode_FromString(value);
+            };
             PyValueConverter<bool>.Convert = (value) =>
             {
                 if (value)
@@ -1329,7 +1337,8 @@ namespace Python.Runtime
                     Runtime.PyList_Append(list, pyValue);
                 }
             }
-            return CLRObject.GetInstHandle(value);
+            return value.ToPythonPtr();
+            //return CLRObject.GetInstHandle(value);
         }
     }
 }

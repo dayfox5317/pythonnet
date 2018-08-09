@@ -507,8 +507,8 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
-            _action((Cls)clrObj.inst);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
+            _action(clrObj);
             Runtime.Py_IncRef(Runtime.PyNone);
             return Runtime.PyNone;
         }
@@ -552,9 +552,9 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
-            _action((Cls)clrObj.inst, arg_1);
+            _action(clrObj, arg_1);
             Runtime.Py_IncRef(Runtime.PyNone);
             return Runtime.PyNone;
         }
@@ -599,10 +599,10 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
-            _action((Cls)clrObj.inst, arg_1, arg_2);
+            _action(clrObj, arg_1, arg_2);
             Runtime.Py_IncRef(Runtime.PyNone);
             return Runtime.PyNone;
         }
@@ -648,11 +648,11 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
-            _action((Cls)clrObj.inst, arg_1, arg_2, arg_3);
+            _action(clrObj, arg_1, arg_2, arg_3);
             Runtime.Py_IncRef(Runtime.PyNone);
             return Runtime.PyNone;
         }
@@ -699,12 +699,12 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
             T4 arg_4 = ArgParser.Extract<T4>(args, 3);
-            _action((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4);
+            _action(clrObj, arg_1, arg_2, arg_3, arg_4);
             Runtime.Py_IncRef(Runtime.PyNone);
             return Runtime.PyNone;
         }
@@ -752,13 +752,13 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
             T4 arg_4 = ArgParser.Extract<T4>(args, 3);
             T5 arg_5 = ArgParser.Extract<T5>(args, 4);
-            _action((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4, arg_5);
+            _action(clrObj, arg_1, arg_2, arg_3, arg_4, arg_5);
             Runtime.Py_IncRef(Runtime.PyNone);
             return Runtime.PyNone;
         }
@@ -807,14 +807,14 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
             T4 arg_4 = ArgParser.Extract<T4>(args, 3);
             T5 arg_5 = ArgParser.Extract<T5>(args, 4);
             T6 arg_6 = ArgParser.Extract<T6>(args, 5);
-            _action((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6);
+            _action(clrObj, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6);
             Runtime.Py_IncRef(Runtime.PyNone);
             return Runtime.PyNone;
         }
@@ -864,7 +864,7 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
@@ -872,7 +872,7 @@ namespace Python.Runtime.Method
             T5 arg_5 = ArgParser.Extract<T5>(args, 4);
             T6 arg_6 = ArgParser.Extract<T6>(args, 5);
             T7 arg_7 = ArgParser.Extract<T7>(args, 6);
-            _action((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7);
+            _action(clrObj, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7);
             Runtime.Py_IncRef(Runtime.PyNone);
             return Runtime.PyNone;
         }
@@ -923,7 +923,7 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
@@ -932,7 +932,7 @@ namespace Python.Runtime.Method
             T6 arg_6 = ArgParser.Extract<T6>(args, 5);
             T7 arg_7 = ArgParser.Extract<T7>(args, 6);
             T8 arg_8 = ArgParser.Extract<T8>(args, 7);
-            _action((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8);
+            _action(clrObj, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8);
             Runtime.Py_IncRef(Runtime.PyNone);
             return Runtime.PyNone;
         }
@@ -984,7 +984,7 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
@@ -994,7 +994,7 @@ namespace Python.Runtime.Method
             T7 arg_7 = ArgParser.Extract<T7>(args, 6);
             T8 arg_8 = ArgParser.Extract<T8>(args, 7);
             T9 arg_9 = ArgParser.Extract<T9>(args, 8);
-            _action((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9);
+            _action(clrObj, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9);
             Runtime.Py_IncRef(Runtime.PyNone);
             return Runtime.PyNone;
         }
@@ -1047,7 +1047,7 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
@@ -1058,7 +1058,7 @@ namespace Python.Runtime.Method
             T8 arg_8 = ArgParser.Extract<T8>(args, 7);
             T9 arg_9 = ArgParser.Extract<T9>(args, 8);
             T10 arg_10 = ArgParser.Extract<T10>(args, 9);
-            _action((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10);
+            _action(clrObj, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10);
             Runtime.Py_IncRef(Runtime.PyNone);
             return Runtime.PyNone;
         }
@@ -1112,7 +1112,7 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
@@ -1124,7 +1124,7 @@ namespace Python.Runtime.Method
             T9 arg_9 = ArgParser.Extract<T9>(args, 8);
             T10 arg_10 = ArgParser.Extract<T10>(args, 9);
             T11 arg_11 = ArgParser.Extract<T11>(args, 10);
-            _action((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11);
+            _action(clrObj, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11);
             Runtime.Py_IncRef(Runtime.PyNone);
             return Runtime.PyNone;
         }
@@ -1179,7 +1179,7 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
@@ -1192,7 +1192,7 @@ namespace Python.Runtime.Method
             T10 arg_10 = ArgParser.Extract<T10>(args, 9);
             T11 arg_11 = ArgParser.Extract<T11>(args, 10);
             T12 arg_12 = ArgParser.Extract<T12>(args, 11);
-            _action((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11, arg_12);
+            _action(clrObj, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11, arg_12);
             Runtime.Py_IncRef(Runtime.PyNone);
             return Runtime.PyNone;
         }
@@ -1248,7 +1248,7 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
@@ -1262,7 +1262,7 @@ namespace Python.Runtime.Method
             T11 arg_11 = ArgParser.Extract<T11>(args, 10);
             T12 arg_12 = ArgParser.Extract<T12>(args, 11);
             T13 arg_13 = ArgParser.Extract<T13>(args, 12);
-            _action((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11, arg_12, arg_13);
+            _action(clrObj, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11, arg_12, arg_13);
             Runtime.Py_IncRef(Runtime.PyNone);
             return Runtime.PyNone;
         }
@@ -1319,7 +1319,7 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
@@ -1334,7 +1334,7 @@ namespace Python.Runtime.Method
             T12 arg_12 = ArgParser.Extract<T12>(args, 11);
             T13 arg_13 = ArgParser.Extract<T13>(args, 12);
             T14 arg_14 = ArgParser.Extract<T14>(args, 13);
-            _action((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11, arg_12, arg_13, arg_14);
+            _action(clrObj, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11, arg_12, arg_13, arg_14);
             Runtime.Py_IncRef(Runtime.PyNone);
             return Runtime.PyNone;
         }
@@ -1392,7 +1392,7 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
@@ -1408,7 +1408,7 @@ namespace Python.Runtime.Method
             T13 arg_13 = ArgParser.Extract<T13>(args, 12);
             T14 arg_14 = ArgParser.Extract<T14>(args, 13);
             T15 arg_15 = ArgParser.Extract<T15>(args, 14);
-            _action((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11, arg_12, arg_13, arg_14, arg_15);
+            _action(clrObj, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11, arg_12, arg_13, arg_14, arg_15);
             Runtime.Py_IncRef(Runtime.PyNone);
             return Runtime.PyNone;
         }
@@ -1470,9 +1470,9 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
-            TResult result = _func((Cls)clrObj.inst);
-            return result.ToPythonPtr();
+            Cls clrObj = ValueConverter<Cls>.Get(self);
+            TResult result = _func((Cls)clrObj);
+            return PyValueConverter<TResult>.Convert(result);
         }
     }
 
@@ -1513,10 +1513,10 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
-            TResult result = _func((Cls)clrObj.inst, arg_1);
-            return result.ToPythonPtr();
+            TResult result = _func((Cls)clrObj, arg_1);
+            return PyValueConverter<TResult>.Convert(result);
         }
     }
 
@@ -1558,11 +1558,11 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
-            TResult result = _func((Cls)clrObj.inst, arg_1, arg_2);
-            return result.ToPythonPtr();
+            TResult result = _func((Cls)clrObj, arg_1, arg_2);
+            return PyValueConverter<TResult>.Convert(result);
         }
     }
 
@@ -1605,12 +1605,12 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
-            TResult result = _func((Cls)clrObj.inst, arg_1, arg_2, arg_3);
-            return result.ToPythonPtr();
+            TResult result = _func((Cls)clrObj, arg_1, arg_2, arg_3);
+            return PyValueConverter<TResult>.Convert(result);
         }
     }
 
@@ -1654,13 +1654,13 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
             T4 arg_4 = ArgParser.Extract<T4>(args, 3);
-            TResult result = _func((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4);
-            return result.ToPythonPtr();
+            TResult result = _func((Cls)clrObj, arg_1, arg_2, arg_3, arg_4);
+            return PyValueConverter<TResult>.Convert(result);
         }
     }
 
@@ -1705,14 +1705,14 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
             T4 arg_4 = ArgParser.Extract<T4>(args, 3);
             T5 arg_5 = ArgParser.Extract<T5>(args, 4);
-            TResult result = _func((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4, arg_5);
-            return result.ToPythonPtr();
+            TResult result = _func((Cls)clrObj, arg_1, arg_2, arg_3, arg_4, arg_5);
+            return PyValueConverter<TResult>.Convert(result);
         }
     }
 
@@ -1758,15 +1758,15 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
             T4 arg_4 = ArgParser.Extract<T4>(args, 3);
             T5 arg_5 = ArgParser.Extract<T5>(args, 4);
             T6 arg_6 = ArgParser.Extract<T6>(args, 5);
-            TResult result = _func((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6);
-            return result.ToPythonPtr();
+            TResult result = _func((Cls)clrObj, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6);
+            return PyValueConverter<TResult>.Convert(result);
         }
     }
 
@@ -1813,7 +1813,7 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
@@ -1821,8 +1821,8 @@ namespace Python.Runtime.Method
             T5 arg_5 = ArgParser.Extract<T5>(args, 4);
             T6 arg_6 = ArgParser.Extract<T6>(args, 5);
             T7 arg_7 = ArgParser.Extract<T7>(args, 6);
-            TResult result = _func((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7);
-            return result.ToPythonPtr();
+            TResult result = _func((Cls)clrObj, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7);
+            return PyValueConverter<TResult>.Convert(result);
         }
     }
 
@@ -1870,7 +1870,7 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
@@ -1879,8 +1879,8 @@ namespace Python.Runtime.Method
             T6 arg_6 = ArgParser.Extract<T6>(args, 5);
             T7 arg_7 = ArgParser.Extract<T7>(args, 6);
             T8 arg_8 = ArgParser.Extract<T8>(args, 7);
-            TResult result = _func((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8);
-            return result.ToPythonPtr();
+            TResult result = _func((Cls)clrObj, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8);
+            return PyValueConverter<TResult>.Convert(result);
         }
     }
 
@@ -1929,7 +1929,7 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
@@ -1939,8 +1939,8 @@ namespace Python.Runtime.Method
             T7 arg_7 = ArgParser.Extract<T7>(args, 6);
             T8 arg_8 = ArgParser.Extract<T8>(args, 7);
             T9 arg_9 = ArgParser.Extract<T9>(args, 8);
-            TResult result = _func((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9);
-            return result.ToPythonPtr();
+            TResult result = _func((Cls)clrObj, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9);
+            return PyValueConverter<TResult>.Convert(result);
         }
     }
 
@@ -1990,7 +1990,7 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
@@ -2001,8 +2001,8 @@ namespace Python.Runtime.Method
             T8 arg_8 = ArgParser.Extract<T8>(args, 7);
             T9 arg_9 = ArgParser.Extract<T9>(args, 8);
             T10 arg_10 = ArgParser.Extract<T10>(args, 9);
-            TResult result = _func((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10);
-            return result.ToPythonPtr();
+            TResult result = _func((Cls)clrObj, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10);
+            return PyValueConverter<TResult>.Convert(result);
         }
     }
 
@@ -2053,7 +2053,7 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
@@ -2065,8 +2065,8 @@ namespace Python.Runtime.Method
             T9 arg_9 = ArgParser.Extract<T9>(args, 8);
             T10 arg_10 = ArgParser.Extract<T10>(args, 9);
             T11 arg_11 = ArgParser.Extract<T11>(args, 10);
-            TResult result = _func((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11);
-            return result.ToPythonPtr();
+            TResult result = _func((Cls)clrObj, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11);
+            return PyValueConverter<TResult>.Convert(result);
         }
     }
 
@@ -2118,7 +2118,7 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
@@ -2131,8 +2131,8 @@ namespace Python.Runtime.Method
             T10 arg_10 = ArgParser.Extract<T10>(args, 9);
             T11 arg_11 = ArgParser.Extract<T11>(args, 10);
             T12 arg_12 = ArgParser.Extract<T12>(args, 11);
-            TResult result = _func((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11, arg_12);
-            return result.ToPythonPtr();
+            TResult result = _func((Cls)clrObj, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11, arg_12);
+            return PyValueConverter<TResult>.Convert(result);
         }
     }
 
@@ -2185,7 +2185,7 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
@@ -2199,8 +2199,8 @@ namespace Python.Runtime.Method
             T11 arg_11 = ArgParser.Extract<T11>(args, 10);
             T12 arg_12 = ArgParser.Extract<T12>(args, 11);
             T13 arg_13 = ArgParser.Extract<T13>(args, 12);
-            TResult result = _func((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11, arg_12, arg_13);
-            return result.ToPythonPtr();
+            TResult result = _func((Cls)clrObj, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11, arg_12, arg_13);
+            return PyValueConverter<TResult>.Convert(result);
         }
     }
 
@@ -2254,7 +2254,7 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
@@ -2269,8 +2269,8 @@ namespace Python.Runtime.Method
             T12 arg_12 = ArgParser.Extract<T12>(args, 11);
             T13 arg_13 = ArgParser.Extract<T13>(args, 12);
             T14 arg_14 = ArgParser.Extract<T14>(args, 13);
-            TResult result = _func((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11, arg_12, arg_13, arg_14);
-            return result.ToPythonPtr();
+            TResult result = _func((Cls)clrObj, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11, arg_12, arg_13, arg_14);
+            return PyValueConverter<TResult>.Convert(result);
         }
     }
 
@@ -2325,7 +2325,7 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args)
         {
-            var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
+            Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
             T3 arg_3 = ArgParser.Extract<T3>(args, 2);
@@ -2341,8 +2341,8 @@ namespace Python.Runtime.Method
             T13 arg_13 = ArgParser.Extract<T13>(args, 12);
             T14 arg_14 = ArgParser.Extract<T14>(args, 13);
             T15 arg_15 = ArgParser.Extract<T15>(args, 14);
-            TResult result = _func((Cls)clrObj.inst, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11, arg_12, arg_13, arg_14, arg_15);
-            return result.ToPythonPtr();
+            TResult result = _func((Cls)clrObj, arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11, arg_12, arg_13, arg_14, arg_15);
+            return PyValueConverter<TResult>.Convert(result);
         }
     }
 

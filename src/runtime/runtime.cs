@@ -1663,5 +1663,8 @@ namespace Python.Runtime
 
         [DllImport(_PythonDll, CallingConvention = CallingConvention.Cdecl)]
         public static extern int Py_MakePendingCalls();
+
+        [DllImport(_PythonDll, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void _PyObject_Dump(IntPtr op);
     }
 }
