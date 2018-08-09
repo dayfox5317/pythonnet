@@ -954,7 +954,17 @@ namespace Python.Runtime
 
         internal static double ToDouble(IntPtr op)
         {
-            double result = Runtime.PyFloat_AsDouble(op);
+            double result;
+            if (Runtime.PyFloat_Check(op))
+            {
+                result = Runtime.PyFloat_AsDouble(op);
+            }
+            else
+            {
+                op = Runtime.PyNumber_Float(op);
+                result = Runtime.PyFloat_AsDouble(op);
+                Runtime.XDecref(op);
+            }
             return result;
         }
 
@@ -1080,7 +1090,7 @@ namespace Python.Runtime
             ValueConverter<bool>.Get = (op) => Runtime.PyObject_IsTrue(op) != 0;
             ValueConverter<float>.Get = (op) => (float)Converter.ToDouble(op);
             ValueConverter<double>.Get = Converter.ToDouble;
-            ValueConverter<decimal>.Get = (op) => Convert.ToDecimal(Converter.ToDouble(op));
+            //ValueConverter<decimal>.Get = (op) => Convert.ToDecimal(Converter.ToDouble(op));
 
             //ValueConverter<Type>.Get = (op) => ((ClassBase)ManagedType.GetManagedObject(op)).type;
             ValueConverter<PyObject>.Get = PyObjectConverter.Convert;
@@ -1270,6 +1280,13 @@ namespace Python.Runtime
 
             PyValueConverter<float>.Convert = (value) => Runtime.PyFloat_FromDouble(value);
             PyValueConverter<double>.Convert = Runtime.PyFloat_FromDouble;
+            //PyValueConverter<decimal>.Convert = (value) =>
+            //{
+            //    if (value > double.MaxValue || value < double.MinValue)
+            //    {
+            //        (double)decimal.MaxValue
+            //    }
+            //};
 
             PyValueConverter<string>.Convert = (value) =>
             {
@@ -1321,6 +1338,7 @@ namespace Python.Runtime
 
         static IntPtr DefaultConverter(T value)
         {
+            System.Diagnostics.Debug.Assert(!typeof(T).IsPrimitive);
             // TODO: IPythonDerivedType
             if (value == null)
             {

@@ -351,6 +351,11 @@ namespace Python.Runtime
             {
                 return Exceptions.RaiseTypeError("No match found for given type params");
             }
+            if (Exceptions.ErrorOccurred())
+            {
+                Runtime.PyErr_Print();
+                Console.WriteLine();
+            }
             bool needValidate = callerList.Count > 1;
             foreach (var caller in callerList)
             {
@@ -360,7 +365,14 @@ namespace Python.Runtime
                 }
                 try
                 {
-                    return caller.Call(self, args);
+                    IntPtr res = caller.Call(self, args);
+#if DEBUG
+                    if (res != IntPtr.Zero && Runtime.PyErr_Occurred() != 0)
+                    {
+                        DebugUtil.debug("");
+                    }
+#endif
+                    return res;
                 }
                 catch (ConvertException)
                 {
