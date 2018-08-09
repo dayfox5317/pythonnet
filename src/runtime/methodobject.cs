@@ -343,7 +343,7 @@ namespace Python.Runtime
         public IntPtr PyCall(IntPtr self, IntPtr args)
         {
             int argc = Runtime.PyTuple_Size(args);
-            // TODO: params array
+            // TODO: params array, default params
             List<Method.IMethodCaller> callerList;
             if (!_callers.TryGetValue(argc, out callerList))
             {

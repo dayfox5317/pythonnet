@@ -119,11 +119,11 @@ namespace Python.Runtime
             // information, including generating the member descriptors
             // that we'll be putting in the Python class __dict__.
 
-            ClassInfo info = Binder.NativeBinder.GetStaticBindClassInfo(type);
-            if (info == null)
-            {
-                info = GetClassInfo(type);
-            }
+            //ClassInfo info = Binder.NativeBinder.GetStaticBindClassInfo(type);
+            //if (info == null)
+            //{
+            //}
+            ClassInfo info = GetClassInfo(type);
 
 
             impl.indexer = info.indexer;
@@ -403,38 +403,51 @@ namespace Python.Runtime
                 list = (ArrayList)iter.Value;
 
                 var mlist = (MethodInfo[])list.ToArray(typeof(MethodInfo));
-                bool ok = true;
-                foreach (var item1 in mlist)
-                {
-                    if (item1.IsStatic)
-                    {
-                        ok = false; break;
-                    }
-                }
-                //if (ok)
-                try
-                {
-                    //ob = new MethodObject(type, name, mlist);
-                    ob = MethodCreator.CreateDelegateMethod(type, name, mlist);
-                    if (ob == null)
-                    {
-                        ob = new MethodObject(type, name, mlist);
-                    }
-                }
-                catch (Exception e)
-                {
-                    //Console.WriteLine(type);
-                    //Console.WriteLine(name);
-                    //Console.WriteLine(e);
-                    ob = new MethodObject(type, name, mlist);
-                    //throw;
-                }
-                //else
-                //    ob = new MethodObject(type, name, mlist);
+                ob = GetMethodObject(type, name, mlist);
                 ci.members[name] = ob;
             }
 
             return ci;
+        }
+
+        private static ManagedType GetMethodObject(Type type, string name, MethodInfo[] mlist)
+        {
+            ManagedType ob;
+            bool ok = true;
+            foreach (var item1 in mlist)
+            {
+                if (item1.IsStatic)
+                {
+                    ok = false; break;
+                }
+            }
+            //if (ok)
+            var binder = Binder.NativeBinder.GetBinder(type);
+            // TODO: mix bind
+            if (binder.Bindable(name))
+            {
+                return binder.CreateBindCaller(name);
+            }
+            try
+            {
+                //ob = new MethodObject(type, name, mlist);
+                ob = MethodCreator.CreateDelegateMethod(type, name, mlist);
+                if (ob == null)
+                {
+                    ob = new MethodObject(type, name, mlist);
+                }
+            }
+            catch (Exception e)
+            {
+                //Console.WriteLine(type);
+                //Console.WriteLine(name);
+                //Console.WriteLine(e);
+                ob = new MethodObject(type, name, mlist);
+                //throw;
+            }
+            //else
+            //    ob = new MethodObject(type, name, mlist);
+            return ob;
         }
     }
 

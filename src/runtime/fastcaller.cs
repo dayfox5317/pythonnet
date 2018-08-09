@@ -32,6 +32,16 @@ namespace Python.Runtime.Binder
             return true;
         }
 
+        public static WrapBinder GetBinder(Type type)
+        {
+            WrapBinder binder;
+            if (_binders.TryGetValue(type, out binder))
+            {
+                return binder;
+            }
+            return null;
+        }
+
         //internal static WrapBinder TryGetBinder(Type type)
         //{
 
@@ -80,6 +90,16 @@ namespace Python.Runtime.Binder
                 }
             };
             _methods.Add(name, wrapper);
+        }
+
+        public bool Bindable(string name)
+        {
+            return _methods.ContainsKey(name);
+        }
+
+        internal FastMethodCaller CreateBindCaller(string name)
+        {
+            return new FastMethodCaller(name, _methods[name]);
         }
 
         internal IEnumerable<KeyValuePair<string, FastMethodCaller>> IterMethodDescrs()
