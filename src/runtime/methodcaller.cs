@@ -7,8 +7,23 @@ namespace Python.Runtime.Method
 {
     interface IMethodCaller
     {
+        bool IsStatic { get; }
         bool Check(IntPtr args);
         IntPtr Call(IntPtr self, IntPtr args);
+    }
+
+    abstract class StaticMethodCaller : IMethodCaller
+    {
+        public bool IsStatic => true;
+        public abstract IntPtr Call(IntPtr self, IntPtr args);
+        public abstract bool Check(IntPtr args);
+    }
+
+    abstract class BoundMethodCaller : IMethodCaller
+    {
+        public bool IsStatic => false;
+        public abstract IntPtr Call(IntPtr self, IntPtr args);
+        public abstract bool Check(IntPtr args);
     }
 
     static class ActionCallerCreator
@@ -491,7 +506,7 @@ namespace Python.Runtime.Method
     }
 
 
-    class ActionMethodCaller<Cls> : IMethodCaller
+    class ActionMethodCaller<Cls> : BoundMethodCaller
     {
         private readonly Action<Cls> _action;
 
@@ -500,12 +515,12 @@ namespace Python.Runtime.Method
             _action = (Action<Cls>)Delegate.CreateDelegate(typeof(Action<Cls>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return true;
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             _action(clrObj);
@@ -514,7 +529,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionStaticMethodCaller : IMethodCaller
+    class ActionStaticMethodCaller : StaticMethodCaller
     {
         private readonly Action _action;
 
@@ -523,12 +538,12 @@ namespace Python.Runtime.Method
             _action = (Action)Delegate.CreateDelegate(typeof(Action), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return true;
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             _action();
             Runtime.Py_IncRef(Runtime.PyNone);
@@ -536,7 +551,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionMethodCaller<Cls, T1> : IMethodCaller
+    class ActionMethodCaller<Cls, T1> : BoundMethodCaller
     {
         private readonly Action<Cls, T1> _action;
 
@@ -545,12 +560,12 @@ namespace Python.Runtime.Method
             _action = (Action<Cls, T1>)Delegate.CreateDelegate(typeof(Action<Cls, T1>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -560,7 +575,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionStaticMethodCaller<T1> : IMethodCaller
+    class ActionStaticMethodCaller<T1> : StaticMethodCaller
     {
         private readonly Action<T1> _action;
 
@@ -569,12 +584,12 @@ namespace Python.Runtime.Method
             _action = (Action<T1>)Delegate.CreateDelegate(typeof(Action<T1>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             _action(arg_1);
@@ -583,7 +598,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionMethodCaller<Cls, T1, T2> : IMethodCaller
+    class ActionMethodCaller<Cls, T1, T2> : BoundMethodCaller
     {
         private readonly Action<Cls, T1, T2> _action;
 
@@ -592,12 +607,12 @@ namespace Python.Runtime.Method
             _action = (Action<Cls, T1, T2>)Delegate.CreateDelegate(typeof(Action<Cls, T1, T2>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -608,7 +623,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionStaticMethodCaller<T1, T2> : IMethodCaller
+    class ActionStaticMethodCaller<T1, T2> : StaticMethodCaller
     {
         private readonly Action<T1, T2> _action;
 
@@ -617,12 +632,12 @@ namespace Python.Runtime.Method
             _action = (Action<T1, T2>)Delegate.CreateDelegate(typeof(Action<T1, T2>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -632,7 +647,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionMethodCaller<Cls, T1, T2, T3> : IMethodCaller
+    class ActionMethodCaller<Cls, T1, T2, T3> : BoundMethodCaller
     {
         private readonly Action<Cls, T1, T2, T3> _action;
 
@@ -641,12 +656,12 @@ namespace Python.Runtime.Method
             _action = (Action<Cls, T1, T2, T3>)Delegate.CreateDelegate(typeof(Action<Cls, T1, T2, T3>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -658,7 +673,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionStaticMethodCaller<T1, T2, T3> : IMethodCaller
+    class ActionStaticMethodCaller<T1, T2, T3> : StaticMethodCaller
     {
         private readonly Action<T1, T2, T3> _action;
 
@@ -667,12 +682,12 @@ namespace Python.Runtime.Method
             _action = (Action<T1, T2, T3>)Delegate.CreateDelegate(typeof(Action<T1, T2, T3>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -683,7 +698,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionMethodCaller<Cls, T1, T2, T3, T4> : IMethodCaller
+    class ActionMethodCaller<Cls, T1, T2, T3, T4> : BoundMethodCaller
     {
         private readonly Action<Cls, T1, T2, T3, T4> _action;
 
@@ -692,12 +707,12 @@ namespace Python.Runtime.Method
             _action = (Action<Cls, T1, T2, T3, T4>)Delegate.CreateDelegate(typeof(Action<Cls, T1, T2, T3, T4>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -710,7 +725,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionStaticMethodCaller<T1, T2, T3, T4> : IMethodCaller
+    class ActionStaticMethodCaller<T1, T2, T3, T4> : StaticMethodCaller
     {
         private readonly Action<T1, T2, T3, T4> _action;
 
@@ -719,12 +734,12 @@ namespace Python.Runtime.Method
             _action = (Action<T1, T2, T3, T4>)Delegate.CreateDelegate(typeof(Action<T1, T2, T3, T4>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -736,7 +751,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionMethodCaller<Cls, T1, T2, T3, T4, T5> : IMethodCaller
+    class ActionMethodCaller<Cls, T1, T2, T3, T4, T5> : BoundMethodCaller
     {
         private readonly Action<Cls, T1, T2, T3, T4, T5> _action;
 
@@ -745,12 +760,12 @@ namespace Python.Runtime.Method
             _action = (Action<Cls, T1, T2, T3, T4, T5>)Delegate.CreateDelegate(typeof(Action<Cls, T1, T2, T3, T4, T5>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -764,7 +779,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionStaticMethodCaller<T1, T2, T3, T4, T5> : IMethodCaller
+    class ActionStaticMethodCaller<T1, T2, T3, T4, T5> : StaticMethodCaller
     {
         private readonly Action<T1, T2, T3, T4, T5> _action;
 
@@ -773,12 +788,12 @@ namespace Python.Runtime.Method
             _action = (Action<T1, T2, T3, T4, T5>)Delegate.CreateDelegate(typeof(Action<T1, T2, T3, T4, T5>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -791,7 +806,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionMethodCaller<Cls, T1, T2, T3, T4, T5, T6> : IMethodCaller
+    class ActionMethodCaller<Cls, T1, T2, T3, T4, T5, T6> : BoundMethodCaller
     {
         private readonly Action<Cls, T1, T2, T3, T4, T5, T6> _action;
 
@@ -800,12 +815,12 @@ namespace Python.Runtime.Method
             _action = (Action<Cls, T1, T2, T3, T4, T5, T6>)Delegate.CreateDelegate(typeof(Action<Cls, T1, T2, T3, T4, T5, T6>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -820,7 +835,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionStaticMethodCaller<T1, T2, T3, T4, T5, T6> : IMethodCaller
+    class ActionStaticMethodCaller<T1, T2, T3, T4, T5, T6> : StaticMethodCaller
     {
         private readonly Action<T1, T2, T3, T4, T5, T6> _action;
 
@@ -829,12 +844,12 @@ namespace Python.Runtime.Method
             _action = (Action<T1, T2, T3, T4, T5, T6>)Delegate.CreateDelegate(typeof(Action<T1, T2, T3, T4, T5, T6>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -848,7 +863,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7> : IMethodCaller
+    class ActionMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7> : BoundMethodCaller
     {
         private readonly Action<Cls, T1, T2, T3, T4, T5, T6, T7> _action;
 
@@ -857,12 +872,12 @@ namespace Python.Runtime.Method
             _action = (Action<Cls, T1, T2, T3, T4, T5, T6, T7>)Delegate.CreateDelegate(typeof(Action<Cls, T1, T2, T3, T4, T5, T6, T7>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -878,7 +893,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7> : IMethodCaller
+    class ActionStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7> : StaticMethodCaller
     {
         private readonly Action<T1, T2, T3, T4, T5, T6, T7> _action;
 
@@ -887,12 +902,12 @@ namespace Python.Runtime.Method
             _action = (Action<T1, T2, T3, T4, T5, T6, T7>)Delegate.CreateDelegate(typeof(Action<T1, T2, T3, T4, T5, T6, T7>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -907,7 +922,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8> : IMethodCaller
+    class ActionMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8> : BoundMethodCaller
     {
         private readonly Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8> _action;
 
@@ -916,12 +931,12 @@ namespace Python.Runtime.Method
             _action = (Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8>)Delegate.CreateDelegate(typeof(Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -938,7 +953,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8> : IMethodCaller
+    class ActionStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8> : StaticMethodCaller
     {
         private readonly Action<T1, T2, T3, T4, T5, T6, T7, T8> _action;
 
@@ -947,12 +962,12 @@ namespace Python.Runtime.Method
             _action = (Action<T1, T2, T3, T4, T5, T6, T7, T8>)Delegate.CreateDelegate(typeof(Action<T1, T2, T3, T4, T5, T6, T7, T8>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -968,7 +983,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9> : IMethodCaller
+    class ActionMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9> : BoundMethodCaller
     {
         private readonly Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9> _action;
 
@@ -977,12 +992,12 @@ namespace Python.Runtime.Method
             _action = (Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9>)Delegate.CreateDelegate(typeof(Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -1000,7 +1015,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9> : IMethodCaller
+    class ActionStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9> : StaticMethodCaller
     {
         private readonly Action<T1, T2, T3, T4, T5, T6, T7, T8, T9> _action;
 
@@ -1009,12 +1024,12 @@ namespace Python.Runtime.Method
             _action = (Action<T1, T2, T3, T4, T5, T6, T7, T8, T9>)Delegate.CreateDelegate(typeof(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -1031,7 +1046,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> : IMethodCaller
+    class ActionMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> : BoundMethodCaller
     {
         private readonly Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> _action;
 
@@ -1040,12 +1055,12 @@ namespace Python.Runtime.Method
             _action = (Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>)Delegate.CreateDelegate(typeof(Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -1064,7 +1079,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> : IMethodCaller
+    class ActionStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> : StaticMethodCaller
     {
         private readonly Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> _action;
 
@@ -1073,12 +1088,12 @@ namespace Python.Runtime.Method
             _action = (Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>)Delegate.CreateDelegate(typeof(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -1096,7 +1111,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> : IMethodCaller
+    class ActionMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> : BoundMethodCaller
     {
         private readonly Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> _action;
 
@@ -1105,12 +1120,12 @@ namespace Python.Runtime.Method
             _action = (Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>)Delegate.CreateDelegate(typeof(Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -1130,7 +1145,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> : IMethodCaller
+    class ActionStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> : StaticMethodCaller
     {
         private readonly Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> _action;
 
@@ -1139,12 +1154,12 @@ namespace Python.Runtime.Method
             _action = (Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>)Delegate.CreateDelegate(typeof(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -1163,7 +1178,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> : IMethodCaller
+    class ActionMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> : BoundMethodCaller
     {
         private readonly Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> _action;
 
@@ -1172,12 +1187,12 @@ namespace Python.Runtime.Method
             _action = (Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>)Delegate.CreateDelegate(typeof(Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -1198,7 +1213,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> : IMethodCaller
+    class ActionStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> : StaticMethodCaller
     {
         private readonly Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> _action;
 
@@ -1207,12 +1222,12 @@ namespace Python.Runtime.Method
             _action = (Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>)Delegate.CreateDelegate(typeof(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -1232,7 +1247,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13> : IMethodCaller
+    class ActionMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13> : BoundMethodCaller
     {
         private readonly Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13> _action;
 
@@ -1241,12 +1256,12 @@ namespace Python.Runtime.Method
             _action = (Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>)Delegate.CreateDelegate(typeof(Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -1268,7 +1283,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13> : IMethodCaller
+    class ActionStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13> : StaticMethodCaller
     {
         private readonly Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13> _action;
 
@@ -1277,12 +1292,12 @@ namespace Python.Runtime.Method
             _action = (Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>)Delegate.CreateDelegate(typeof(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -1303,7 +1318,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14> : IMethodCaller
+    class ActionMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14> : BoundMethodCaller
     {
         private readonly Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14> _action;
 
@@ -1312,12 +1327,12 @@ namespace Python.Runtime.Method
             _action = (Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>)Delegate.CreateDelegate(typeof(Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -1340,7 +1355,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14> : IMethodCaller
+    class ActionStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14> : StaticMethodCaller
     {
         private readonly Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14> _action;
 
@@ -1349,12 +1364,12 @@ namespace Python.Runtime.Method
             _action = (Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>)Delegate.CreateDelegate(typeof(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -1376,7 +1391,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> : IMethodCaller
+    class ActionMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> : BoundMethodCaller
     {
         private readonly Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> _action;
 
@@ -1385,12 +1400,12 @@ namespace Python.Runtime.Method
             _action = (Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>)Delegate.CreateDelegate(typeof(Action<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -1414,7 +1429,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> : IMethodCaller
+    class ActionStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> : StaticMethodCaller
     {
         private readonly Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> _action;
 
@@ -1423,12 +1438,12 @@ namespace Python.Runtime.Method
             _action = (Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>)Delegate.CreateDelegate(typeof(Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -1454,7 +1469,7 @@ namespace Python.Runtime.Method
 
 
 
-    class FuncMethodCaller<Cls, TResult> : IMethodCaller
+    class FuncMethodCaller<Cls, TResult> : BoundMethodCaller
     {
         private readonly Func<Cls, TResult> _func;
 
@@ -1463,12 +1478,12 @@ namespace Python.Runtime.Method
             _func = (Func<Cls, TResult>)Delegate.CreateDelegate(typeof(Func<Cls, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return true;
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             TResult result = _func((Cls)clrObj);
@@ -1476,7 +1491,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncStaticMethodCaller<TResult> : IMethodCaller
+    class FuncStaticMethodCaller<TResult> : StaticMethodCaller
     {
         private readonly Func<TResult> _func;
 
@@ -1485,19 +1500,19 @@ namespace Python.Runtime.Method
             _func = (Func<TResult>)Delegate.CreateDelegate(typeof(Func<TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return true;
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             TResult result = _func();
             return result.ToPythonPtr();
         }
     }
 
-    class FuncMethodCaller<Cls, T1, TResult> : IMethodCaller
+    class FuncMethodCaller<Cls, T1, TResult> : BoundMethodCaller
     {
         private readonly Func<Cls, T1, TResult> _func;
 
@@ -1506,12 +1521,12 @@ namespace Python.Runtime.Method
             _func = (Func<Cls, T1, TResult>)Delegate.CreateDelegate(typeof(Func<Cls, T1, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -1520,7 +1535,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncStaticMethodCaller<T1, TResult> : IMethodCaller
+    class FuncStaticMethodCaller<T1, TResult> : StaticMethodCaller
     {
         private readonly Func<T1, TResult> _func;
 
@@ -1529,12 +1544,12 @@ namespace Python.Runtime.Method
             _func = (Func<T1, TResult>)Delegate.CreateDelegate(typeof(Func<T1, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             TResult result = _func(arg_1);
@@ -1542,7 +1557,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncMethodCaller<Cls, T1, T2, TResult> : IMethodCaller
+    class FuncMethodCaller<Cls, T1, T2, TResult> : BoundMethodCaller
     {
         private readonly Func<Cls, T1, T2, TResult> _func;
 
@@ -1551,12 +1566,12 @@ namespace Python.Runtime.Method
             _func = (Func<Cls, T1, T2, TResult>)Delegate.CreateDelegate(typeof(Func<Cls, T1, T2, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -1566,7 +1581,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncStaticMethodCaller<T1, T2, TResult> : IMethodCaller
+    class FuncStaticMethodCaller<T1, T2, TResult> : StaticMethodCaller
     {
         private readonly Func<T1, T2, TResult> _func;
 
@@ -1575,12 +1590,12 @@ namespace Python.Runtime.Method
             _func = (Func<T1, T2, TResult>)Delegate.CreateDelegate(typeof(Func<T1, T2, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -1589,7 +1604,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncMethodCaller<Cls, T1, T2, T3, TResult> : IMethodCaller
+    class FuncMethodCaller<Cls, T1, T2, T3, TResult> : BoundMethodCaller
     {
         private readonly Func<Cls, T1, T2, T3, TResult> _func;
 
@@ -1598,12 +1613,12 @@ namespace Python.Runtime.Method
             _func = (Func<Cls, T1, T2, T3, TResult>)Delegate.CreateDelegate(typeof(Func<Cls, T1, T2, T3, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -1614,7 +1629,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncStaticMethodCaller<T1, T2, T3, TResult> : IMethodCaller
+    class FuncStaticMethodCaller<T1, T2, T3, TResult> : StaticMethodCaller
     {
         private readonly Func<T1, T2, T3, TResult> _func;
 
@@ -1623,12 +1638,12 @@ namespace Python.Runtime.Method
             _func = (Func<T1, T2, T3, TResult>)Delegate.CreateDelegate(typeof(Func<T1, T2, T3, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -1638,7 +1653,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncMethodCaller<Cls, T1, T2, T3, T4, TResult> : IMethodCaller
+    class FuncMethodCaller<Cls, T1, T2, T3, T4, TResult> : BoundMethodCaller
     {
         private readonly Func<Cls, T1, T2, T3, T4, TResult> _func;
 
@@ -1647,12 +1662,12 @@ namespace Python.Runtime.Method
             _func = (Func<Cls, T1, T2, T3, T4, TResult>)Delegate.CreateDelegate(typeof(Func<Cls, T1, T2, T3, T4, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -1664,7 +1679,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncStaticMethodCaller<T1, T2, T3, T4, TResult> : IMethodCaller
+    class FuncStaticMethodCaller<T1, T2, T3, T4, TResult> : StaticMethodCaller
     {
         private readonly Func<T1, T2, T3, T4, TResult> _func;
 
@@ -1673,12 +1688,12 @@ namespace Python.Runtime.Method
             _func = (Func<T1, T2, T3, T4, TResult>)Delegate.CreateDelegate(typeof(Func<T1, T2, T3, T4, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -1689,7 +1704,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncMethodCaller<Cls, T1, T2, T3, T4, T5, TResult> : IMethodCaller
+    class FuncMethodCaller<Cls, T1, T2, T3, T4, T5, TResult> : BoundMethodCaller
     {
         private readonly Func<Cls, T1, T2, T3, T4, T5, TResult> _func;
 
@@ -1698,12 +1713,12 @@ namespace Python.Runtime.Method
             _func = (Func<Cls, T1, T2, T3, T4, T5, TResult>)Delegate.CreateDelegate(typeof(Func<Cls, T1, T2, T3, T4, T5, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -1716,7 +1731,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncStaticMethodCaller<T1, T2, T3, T4, T5, TResult> : IMethodCaller
+    class FuncStaticMethodCaller<T1, T2, T3, T4, T5, TResult> : StaticMethodCaller
     {
         private readonly Func<T1, T2, T3, T4, T5, TResult> _func;
 
@@ -1725,12 +1740,12 @@ namespace Python.Runtime.Method
             _func = (Func<T1, T2, T3, T4, T5, TResult>)Delegate.CreateDelegate(typeof(Func<T1, T2, T3, T4, T5, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -1742,7 +1757,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncMethodCaller<Cls, T1, T2, T3, T4, T5, T6, TResult> : IMethodCaller
+    class FuncMethodCaller<Cls, T1, T2, T3, T4, T5, T6, TResult> : BoundMethodCaller
     {
         private readonly Func<Cls, T1, T2, T3, T4, T5, T6, TResult> _func;
 
@@ -1751,12 +1766,12 @@ namespace Python.Runtime.Method
             _func = (Func<Cls, T1, T2, T3, T4, T5, T6, TResult>)Delegate.CreateDelegate(typeof(Func<Cls, T1, T2, T3, T4, T5, T6, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -1770,7 +1785,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncStaticMethodCaller<T1, T2, T3, T4, T5, T6, TResult> : IMethodCaller
+    class FuncStaticMethodCaller<T1, T2, T3, T4, T5, T6, TResult> : StaticMethodCaller
     {
         private readonly Func<T1, T2, T3, T4, T5, T6, TResult> _func;
 
@@ -1779,12 +1794,12 @@ namespace Python.Runtime.Method
             _func = (Func<T1, T2, T3, T4, T5, T6, TResult>)Delegate.CreateDelegate(typeof(Func<T1, T2, T3, T4, T5, T6, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -1797,7 +1812,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, TResult> : IMethodCaller
+    class FuncMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, TResult> : BoundMethodCaller
     {
         private readonly Func<Cls, T1, T2, T3, T4, T5, T6, T7, TResult> _func;
 
@@ -1806,12 +1821,12 @@ namespace Python.Runtime.Method
             _func = (Func<Cls, T1, T2, T3, T4, T5, T6, T7, TResult>)Delegate.CreateDelegate(typeof(Func<Cls, T1, T2, T3, T4, T5, T6, T7, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -1826,7 +1841,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, TResult> : IMethodCaller
+    class FuncStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, TResult> : StaticMethodCaller
     {
         private readonly Func<T1, T2, T3, T4, T5, T6, T7, TResult> _func;
 
@@ -1835,12 +1850,12 @@ namespace Python.Runtime.Method
             _func = (Func<T1, T2, T3, T4, T5, T6, T7, TResult>)Delegate.CreateDelegate(typeof(Func<T1, T2, T3, T4, T5, T6, T7, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -1854,7 +1869,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, TResult> : IMethodCaller
+    class FuncMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, TResult> : BoundMethodCaller
     {
         private readonly Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, TResult> _func;
 
@@ -1863,12 +1878,12 @@ namespace Python.Runtime.Method
             _func = (Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, TResult>)Delegate.CreateDelegate(typeof(Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -1884,7 +1899,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, TResult> : IMethodCaller
+    class FuncStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, TResult> : StaticMethodCaller
     {
         private readonly Func<T1, T2, T3, T4, T5, T6, T7, T8, TResult> _func;
 
@@ -1893,12 +1908,12 @@ namespace Python.Runtime.Method
             _func = (Func<T1, T2, T3, T4, T5, T6, T7, T8, TResult>)Delegate.CreateDelegate(typeof(Func<T1, T2, T3, T4, T5, T6, T7, T8, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -1913,7 +1928,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult> : IMethodCaller
+    class FuncMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult> : BoundMethodCaller
     {
         private readonly Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult> _func;
 
@@ -1922,12 +1937,12 @@ namespace Python.Runtime.Method
             _func = (Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult>)Delegate.CreateDelegate(typeof(Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -1944,7 +1959,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult> : IMethodCaller
+    class FuncStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult> : StaticMethodCaller
     {
         private readonly Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult> _func;
 
@@ -1953,12 +1968,12 @@ namespace Python.Runtime.Method
             _func = (Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult>)Delegate.CreateDelegate(typeof(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -1974,7 +1989,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult> : IMethodCaller
+    class FuncMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult> : BoundMethodCaller
     {
         private readonly Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult> _func;
 
@@ -1983,12 +1998,12 @@ namespace Python.Runtime.Method
             _func = (Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult>)Delegate.CreateDelegate(typeof(Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -2006,7 +2021,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult> : IMethodCaller
+    class FuncStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult> : StaticMethodCaller
     {
         private readonly Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult> _func;
 
@@ -2015,12 +2030,12 @@ namespace Python.Runtime.Method
             _func = (Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult>)Delegate.CreateDelegate(typeof(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -2037,7 +2052,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult> : IMethodCaller
+    class FuncMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult> : BoundMethodCaller
     {
         private readonly Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult> _func;
 
@@ -2046,12 +2061,12 @@ namespace Python.Runtime.Method
             _func = (Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult>)Delegate.CreateDelegate(typeof(Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -2070,7 +2085,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult> : IMethodCaller
+    class FuncStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult> : StaticMethodCaller
     {
         private readonly Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult> _func;
 
@@ -2079,12 +2094,12 @@ namespace Python.Runtime.Method
             _func = (Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult>)Delegate.CreateDelegate(typeof(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -2102,7 +2117,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult> : IMethodCaller
+    class FuncMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult> : BoundMethodCaller
     {
         private readonly Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult> _func;
 
@@ -2111,12 +2126,12 @@ namespace Python.Runtime.Method
             _func = (Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult>)Delegate.CreateDelegate(typeof(Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -2136,7 +2151,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult> : IMethodCaller
+    class FuncStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult> : StaticMethodCaller
     {
         private readonly Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult> _func;
 
@@ -2145,12 +2160,12 @@ namespace Python.Runtime.Method
             _func = (Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult>)Delegate.CreateDelegate(typeof(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -2169,7 +2184,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TResult> : IMethodCaller
+    class FuncMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TResult> : BoundMethodCaller
     {
         private readonly Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TResult> _func;
 
@@ -2178,12 +2193,12 @@ namespace Python.Runtime.Method
             _func = (Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TResult>)Delegate.CreateDelegate(typeof(Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -2204,7 +2219,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TResult> : IMethodCaller
+    class FuncStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TResult> : StaticMethodCaller
     {
         private readonly Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TResult> _func;
 
@@ -2213,12 +2228,12 @@ namespace Python.Runtime.Method
             _func = (Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TResult>)Delegate.CreateDelegate(typeof(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -2238,7 +2253,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult> : IMethodCaller
+    class FuncMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult> : BoundMethodCaller
     {
         private readonly Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult> _func;
 
@@ -2247,12 +2262,12 @@ namespace Python.Runtime.Method
             _func = (Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult>)Delegate.CreateDelegate(typeof(Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -2274,7 +2289,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult> : IMethodCaller
+    class FuncStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult> : StaticMethodCaller
     {
         private readonly Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult> _func;
 
@@ -2283,12 +2298,12 @@ namespace Python.Runtime.Method
             _func = (Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult>)Delegate.CreateDelegate(typeof(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);
@@ -2309,7 +2324,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult> : IMethodCaller
+    class FuncMethodCaller<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult> : BoundMethodCaller
     {
         private readonly Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult> _func;
 
@@ -2318,12 +2333,12 @@ namespace Python.Runtime.Method
             _func = (Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult>)Delegate.CreateDelegate(typeof(Func<Cls, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
@@ -2346,7 +2361,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult> : IMethodCaller
+    class FuncStaticMethodCaller<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult> : StaticMethodCaller
     {
         private readonly Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult> _func;
 
@@ -2355,12 +2370,12 @@ namespace Python.Runtime.Method
             _func = (Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult>)Delegate.CreateDelegate(typeof(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return TypeCheck.Check<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>(args);
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             T1 arg_1 = ArgParser.Extract<T1>(args, 0);
             T2 arg_2 = ArgParser.Extract<T2>(args, 1);

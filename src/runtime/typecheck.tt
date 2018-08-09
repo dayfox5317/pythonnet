@@ -27,13 +27,13 @@ namespace Python.Runtime.Binder
         {
             paramStrs[j] = string.Format("T{0}", j + 1);
             checkStrs[j] =string.Format(
-                "TypeTraits<T{0}>.Is(Runtime.PyTuple_GetItem(args, {1}))",
-                j + 1, j);
+                "TypeTraits<T{0}>.Is(Runtime.PyTuple_GetItem(args, start++))",
+                j + 1);
         }
         string genericParam = string.Join(", ", paramStrs);
         string checkStr = string.Join(" && ", checkStrs);
 #>
-        public static bool Check<<#= genericParam #>>(IntPtr args)
+        public static bool Check<<#= genericParam #>>(IntPtr args, int start = 0)
         {
             return <#= checkStr #>;
         }

@@ -363,6 +363,10 @@ namespace Python.Runtime
                 {
                     continue;
                 }
+                if (!caller.IsStatic && self == IntPtr.Zero)
+                {
+
+                }
                 try
                 {
                     IntPtr res = caller.Call(self, args);

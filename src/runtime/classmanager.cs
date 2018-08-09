@@ -431,6 +431,7 @@ namespace Python.Runtime
             try
             {
                 //ob = new MethodObject(type, name, mlist);
+                ob = null;
                 ob = MethodCreator.CreateDelegateMethod(type, name, mlist);
                 if (ob == null)
                 {

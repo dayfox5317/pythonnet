@@ -30,8 +30,23 @@ namespace Python.Runtime.Method
 {
     interface IMethodCaller
     {
+        bool IsStatic { get; }
         bool Check(IntPtr args);
         IntPtr Call(IntPtr self, IntPtr args);
+    }
+
+    abstract class StaticMethodCaller : IMethodCaller
+    {
+        public bool IsStatic => true;
+        public abstract IntPtr Call(IntPtr self, IntPtr args);
+        public abstract bool Check(IntPtr args);
+    }
+
+    abstract class BoundMethodCaller : IMethodCaller
+    {
+        public bool IsStatic => false;
+        public abstract IntPtr Call(IntPtr self, IntPtr args);
+        public abstract bool Check(IntPtr args);
     }
 
     static class ActionCallerCreator
@@ -177,7 +192,7 @@ namespace Python.Runtime.Method
         string checkParams = string.Join(", ", paramStrs.Skip(1).ToArray());
 
 #>
-    class ActionMethodCaller<<#= genericParam #>> : IMethodCaller
+    class ActionMethodCaller<<#= genericParam #>> : BoundMethodCaller
     {
         private readonly Action<<#= genericParam #>> _action;
 
@@ -186,12 +201,12 @@ namespace Python.Runtime.Method
             _action = (Action<<#= genericParam #>>)Delegate.CreateDelegate(typeof(Action<<#= genericParam #>>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return <#= checkParams == string.Empty ? "true" : string.Format("TypeCheck.Check<{0}>(args)", checkParams) #>;
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
 <#
@@ -214,7 +229,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class ActionStaticMethodCaller<#= staticGenericParam #> : IMethodCaller
+    class ActionStaticMethodCaller<#= staticGenericParam #> : StaticMethodCaller
     {
         private readonly Action<#= staticGenericParam #> _action;
 
@@ -223,12 +238,12 @@ namespace Python.Runtime.Method
             _action = (Action<#= staticGenericParam #>)Delegate.CreateDelegate(typeof(Action<#= staticGenericParam #>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return <#= checkParams == string.Empty ? "true" : string.Format("TypeCheck.Check<{0}>(args)", checkParams) #>;
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
 <#
             callParams = new string[i];
@@ -271,7 +286,7 @@ namespace Python.Runtime.Method
         string checkParams = string.Join(", ", paramStrs.Skip(1).Take(i).ToArray());
 
 #>
-    class FuncMethodCaller<<#= genericParam #>> : IMethodCaller
+    class FuncMethodCaller<<#= genericParam #>> : BoundMethodCaller
     {
         private readonly Func<<#= genericParam #>> _func;
 
@@ -280,12 +295,12 @@ namespace Python.Runtime.Method
             _func = (Func<<#= genericParam #>>)Delegate.CreateDelegate(typeof(Func<<#= genericParam #>>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return <#= checkParams == string.Empty ? "true" : string.Format("TypeCheck.Check<{0}>(args)", checkParams) #>;
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
             Cls clrObj = ValueConverter<Cls>.Get(self);
 <#
@@ -307,7 +322,7 @@ namespace Python.Runtime.Method
         }
     }
 
-    class FuncStaticMethodCaller<<#= staticGenericParam #>> : IMethodCaller
+    class FuncStaticMethodCaller<<#= staticGenericParam #>> : StaticMethodCaller
     {
         private readonly Func<<#= staticGenericParam #>> _func;
 
@@ -316,12 +331,12 @@ namespace Python.Runtime.Method
             _func = (Func<<#= staticGenericParam #>>)Delegate.CreateDelegate(typeof(Func<<#= staticGenericParam #>>), info);
         }
 
-        public bool Check(IntPtr args)
+        public override bool Check(IntPtr args)
         {
             return <#= checkParams == string.Empty ? "true" : string.Format("TypeCheck.Check<{0}>(args)", checkParams) #>;
         }
 
-        public IntPtr Call(IntPtr self, IntPtr args)
+        public override IntPtr Call(IntPtr self, IntPtr args)
         {
 <#
             callParams = new string[i];
