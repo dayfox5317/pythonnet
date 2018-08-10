@@ -359,17 +359,24 @@ namespace Python.Runtime
             bool needValidate = callerList.Count > 1;
             foreach (var caller in callerList)
             {
-                if (needValidate && !caller.Check(args))
+                int start = 0;
+                if (!caller.IsStatic && self == IntPtr.Zero)
+                {
+                    self = Runtime.PyTuple_GetItem(args, 0);
+                    if (!caller.CheckSelf(self))
+                    {
+                        // Should be invalid for next caller
+                        break;
+                    }
+                    start = 1;
+                }
+                if (needValidate && !caller.Check(args, start))
                 {
                     continue;
                 }
-                if (!caller.IsStatic && self == IntPtr.Zero)
-                {
-
-                }
                 try
                 {
-                    IntPtr res = caller.Call(self, args);
+                    IntPtr res = caller.Call(self, args, start);
 #if DEBUG
                     if (res != IntPtr.Zero && Runtime.PyErr_Occurred() != 0)
                     {

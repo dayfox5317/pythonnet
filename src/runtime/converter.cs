@@ -1317,6 +1317,11 @@ namespace Python.Runtime
 
         internal static IntPtr Convert(object value)
         {
+            if (value == null)
+            {
+                Runtime.XIncref(Runtime.PyNone);
+                return Runtime.PyNone;
+            }
             Func<object, IntPtr> converter;
             if (ConvertMap.TryGetValue(value.GetType(), out converter))
             {
@@ -1353,6 +1358,7 @@ namespace Python.Runtime
                 {
                     IntPtr pyValue = PyValueConverterHelper.Convert(item);
                     Runtime.PyList_Append(list, pyValue);
+                    Runtime.XDecref(pyValue);
                 }
             }
             return value.ToPythonPtr();
