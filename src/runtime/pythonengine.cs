@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -163,7 +163,9 @@ namespace Python.Runtime
                 // throws an exception in its ctor.  This exception is eaten somehow
                 // during an initial "import clr", and the world ends shortly thereafter.
                 // This is probably masking some bad mojo happening somewhere in Runtime.Initialize().
+#if !AOT
                 delegateManager = new DelegateManager();
+#endif
                 Runtime.Initialize();
                 initialized = true;
                 Exceptions.Clear();

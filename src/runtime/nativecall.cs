@@ -1,11 +1,40 @@
 using System;
 using System.Reflection;
-using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace Python.Runtime
 {
+#if AOT
+    internal class NativeCall
+    {
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        private delegate void Void_1_Delegate(IntPtr a1);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        private delegate int Int_3_Delegate(IntPtr a1, IntPtr a2, IntPtr a3);
+
+        public static void Void_Call_1(IntPtr fp, IntPtr a1)
+        {
+            ((Void_1_Delegate)Marshal.GetDelegateForFunctionPointer(fp, typeof(Void_1_Delegate)))(a1);
+        }
+
+        public static IntPtr Call_3(IntPtr fp, IntPtr a1, IntPtr a2, IntPtr a3)
+        {
+            var d = (Interop.TernaryFunc)Marshal.GetDelegateForFunctionPointer(fp, typeof(Interop.TernaryFunc));
+            return d(a1, a2, a3);
+        }
+
+
+        public static int Int_Call_3(IntPtr fp, IntPtr a1, IntPtr a2, IntPtr a3)
+        {
+            return ((Int_3_Delegate)Marshal.GetDelegateForFunctionPointer(fp, typeof(Int_3_Delegate)))(a1, a2, a3);
+        }
+    }
+#endif
+
+#if !AOT
+    using System.Reflection.Emit;
     /// <summary>
     /// Provides support for calling native code indirectly through
     /// function pointers. Most of the important parts of the Python
@@ -173,5 +202,6 @@ namespace Python.Runtime
 
         IntPtr Call_3(IntPtr funcPtr, IntPtr a1, IntPtr a2, IntPtr a3);
     }
+#endif
 #endif
 }

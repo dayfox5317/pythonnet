@@ -1,3 +1,4 @@
+#if !AOT
 using System;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -44,3 +45,4 @@ namespace Python.Runtime
         }
     }
 }
+#endif //!AOT

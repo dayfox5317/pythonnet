@@ -242,6 +242,9 @@ namespace Python.Runtime
                 return Exceptions.RaiseTypeError("invalid base class, expected CLR class type");
             }
 
+#if AOT
+            throw new NotImplementedException();
+#else
             try
             {
                 Type subType = ClassDerivedObject.CreateDerivedType(name,
@@ -265,6 +268,7 @@ namespace Python.Runtime
             {
                 return Exceptions.RaiseTypeError(e.Message);
             }
+#endif
         }
 
         internal static IntPtr CreateMethodDef(string name, IntPtr func, int flags, string doc = null)

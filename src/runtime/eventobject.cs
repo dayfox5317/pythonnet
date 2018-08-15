@@ -37,6 +37,9 @@ namespace Python.Runtime
             // wrap the Python handler. Note that wrapper delegate creation
             // always succeeds, though calling the wrapper may fail.
             Type type = info.EventHandlerType;
+#if AOT
+            throw new NotImplementedException();
+#else
             Delegate d = PythonEngine.DelegateManager.GetDelegate(type, handler);
 
             // Now register the handler in a mapping from instance to pairs
@@ -63,6 +66,7 @@ namespace Python.Runtime
             mi.Invoke(obj, BindingFlags.Default, null, args, null);
 
             return true;
+#endif
         }
 
 

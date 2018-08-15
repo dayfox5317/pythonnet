@@ -62,9 +62,12 @@ namespace Python.Runtime
             {
                 return Exceptions.RaiseTypeError("argument must be callable");
             }
-
+#if AOT
+            throw new NotImplementedException();
+#else
             Delegate d = PythonEngine.DelegateManager.GetDelegate(self.type, method);
             return CLRObject.GetInstHandle(d, self.pyHandle);
+#endif
         }
 
 

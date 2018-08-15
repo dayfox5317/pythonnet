@@ -1,10 +1,12 @@
 using System;
 using System.Collections;
 using System.Reflection;
-using System.Reflection.Emit;
+
 
 namespace Python.Runtime
 {
+#if !AOT
+    using System.Reflection.Emit;
     /// <summary>
     /// The DelegateManager class manages the creation of true managed
     /// delegate instances that dispatch calls to Python methods.
@@ -280,4 +282,9 @@ namespace Python.Runtime
         {
         }
     }
+#else
+    internal class DelegateManager
+    {
+    }
+#endif
 }

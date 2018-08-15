@@ -1237,12 +1237,32 @@ namespace Python.Runtime
         [DllImport(_PythonDll, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr PyUnicode_FromEncodedObject(IntPtr ob, IntPtr enc, IntPtr err);
 
+#if AOT
+        [DllImport(_PythonDll,EntryPoint = "PyUnicode_FromKindAndData", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr _PyUnicode_FromKindAndData(
+            int kind,
+            IntPtr s,
+            int size
+        );
+
+        static IntPtr PyUnicode_FromKindAndData(int kind, string s, int size)
+        {
+            // Custom marshalers are not currently supported by IL2CPP
+            IntPtr mem = UcsMarshaler.GetInstance(s).MarshalManagedToNative(s);
+            IntPtr res = _PyUnicode_FromKindAndData(kind,
+                UcsMarshaler.GetInstance(s).MarshalManagedToNative(s),
+                size);
+            Marshal.FreeHGlobal(mem);
+            return res;
+        }
+#else
         [DllImport(_PythonDll, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr PyUnicode_FromKindAndData(
             int kind,
             [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(UcsMarshaler))] string s,
             int size
         );
+#endif // AOT
 
         internal static IntPtr PyUnicode_FromUnicode(string s, int size)
         {

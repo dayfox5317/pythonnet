@@ -442,6 +442,11 @@ namespace Python.Runtime
             pmap["bf_getwritebuffer"] = p["IntObjArgFunc"];
             pmap["bf_getsegcount"] = p["ObjObjFunc"];
             pmap["bf_getcharbuffer"] = p["IntObjArgFunc"];
+#if AOT
+            pmap["__instancecheck__"] = p["ObjObjFunc"];
+            pmap["__subclasscheck__"] = p["ObjObjFunc"];
+            pmap["__import__"] = p["TernaryFunc"];
+#endif
         }
 
         internal static Type GetPrototype(string name)
@@ -461,10 +466,14 @@ namespace Python.Runtime
             {
                 IntPtr tmp = Marshal.AllocHGlobal(IntPtr.Size);
                 Delegate d = Delegate.CreateDelegate(dt, method);
+#if AOT
+                fp = Marshal.GetFunctionPointerForDelegate(d);
+#else
                 Thunk cb = new Thunk(d);
                 Marshal.StructureToPtr(cb, tmp, false);
                 IntPtr fp = Marshal.ReadIntPtr(tmp, 0);
                 Marshal.FreeHGlobal(tmp);
+#endif
                 keepAlive.Add(d);
                 return fp;
             }
