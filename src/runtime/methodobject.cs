@@ -246,12 +246,10 @@ namespace Python.Runtime
         {
             DelegateBoundMethodObject boundMethod;
             System.Diagnostics.Debug.Assert(_cache[0] == null);
-            Runtime.XIncref(target);
             if (_numFree != 0)
             {
                 boundMethod = _freeObj;
-                boundMethod.Target = target;
-                boundMethod.Caller = caller;
+                boundMethod.Init(target, caller);
                 _freeObj = _cache[--_numFree];
                 return boundMethod;
             }
@@ -262,13 +260,11 @@ namespace Python.Runtime
         public static bool Recycle(DelegateBoundMethodObject method)
         {
             System.Diagnostics.Debug.Assert(_cache[0] == null);
-            Runtime.XDecref(method.Target);
+            method.Release();
             if (_numFree >= MaxNumFree)
             {
                 return false;
             }
-            method.Target = IntPtr.Zero;
-            method.Caller = null;
             _cache[_numFree++] = _freeObj;
             _freeObj = method;
             return true;
@@ -590,13 +586,26 @@ namespace Python.Runtime
 
         public DelegateBoundMethodObject(IntPtr target, DelegateCallableObject caller)
         {
-            _target = target;
-            _caller = caller;
+            Init(target, caller);
         }
 
         public bool IsCallable()
         {
             return _caller != null && !_caller.Empty();
+        }
+
+        public void Init(IntPtr target, DelegateCallableObject caller)
+        {
+            Runtime.XIncref(target);
+            _target = target;
+            _caller = caller;
+        }
+
+        public void Release()
+        {
+            Runtime.XDecref(_target);
+            _target = IntPtr.Zero;
+            _caller = null;
         }
 
         public static IntPtr tp_call(IntPtr ob, IntPtr args, IntPtr kw)
@@ -610,6 +619,7 @@ namespace Python.Runtime
             var self = (DelegateBoundMethodObject)GetManagedObject(ob);
             if (BoundMethodPool.Recycle(self))
             {
+                Runtime.XIncref(self.pyHandle);
                 return;
             }
             FinalizeObject(self);
