@@ -1,3 +1,4 @@
+using Python.Runtime.Binder;
 using System;
 using System.Reflection;
 
@@ -13,6 +14,7 @@ namespace Python.Runtime
     {
         internal ConstructorBinder binder;
         internal ConstructorInfo[] ctors;
+        private PyCFunction _nativeCreator;
 
         internal ClassObject(Type tp) : base(tp)
         {
@@ -23,6 +25,13 @@ namespace Python.Runtime
             {
                 binder.AddMethod(t);
             }
+
+            var nativeBinder = NativeBinderManager.GetBinder(tp);
+            if (nativeBinder == null)
+            {
+                return;
+            }
+            _nativeCreator = nativeBinder.CreateCtorBinder();
         }
 
 
@@ -61,7 +70,6 @@ namespace Python.Runtime
             }
 
             Type type = self.type;
-
             // Primitive types do not have constructors, but they look like
             // they do from Python. If the ClassObject represents one of the
             // convertible primitive types, just convert the arg directly.
@@ -94,6 +102,11 @@ namespace Python.Runtime
             {
                 Exceptions.SetError(Exceptions.TypeError, "cannot instantiate enumeration");
                 return IntPtr.Zero;
+            }
+
+            if (self._nativeCreator != null)
+            {
+                return self._nativeCreator(IntPtr.Zero, args);
             }
 
             object obj = self.binder.InvokeRaw(IntPtr.Zero, args, kw);

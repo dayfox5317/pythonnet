@@ -7,7 +7,7 @@ using System.Text;
 
 namespace Python.Runtime.Binder
 {
-    public class NativeBinder
+    public class NativeBinderManager
     {
         private static Dictionary<Type, WrapBinder> _binders = new Dictionary<Type, WrapBinder>();
 
@@ -41,12 +41,7 @@ namespace Python.Runtime.Binder
             }
             return null;
         }
-
-        //internal static WrapBinder TryGetBinder(Type type)
-        //{
-
-        //}
-
+        
         internal static ClassInfo GetStaticBindClassInfo(Type type)
         {
             WrapBinder binder;
@@ -68,12 +63,13 @@ namespace Python.Runtime.Binder
     public abstract class WrapBinder
     {
         private Dictionary<string, PyCFunction> _methods = new Dictionary<string, PyCFunction>();
+        private PyCFunction _ctor;
         public Type Target { get; protected set; }
 
-        //public WrapBinder(Type type)
-        //{
-        //    Target = type;
-        //}
+        public void RegisterCtor(PyCFunction func)
+        {
+            _ctor = func;
+        }
 
         public void RegisterMethod(string name, PyCFunction func)
         {
@@ -100,6 +96,11 @@ namespace Python.Runtime.Binder
         internal FastMethodCaller CreateBindCaller(string name)
         {
             return new FastMethodCaller(name, _methods[name]);
+        }
+
+        internal PyCFunction CreateCtorBinder()
+        {
+            return _ctor;
         }
 
         internal IEnumerable<KeyValuePair<string, FastMethodCaller>> IterMethodDescrs()
@@ -180,11 +181,8 @@ namespace Python.Runtime.Binder
     class FastMethodCaller : ExtensionType
     {
         public string Name { get; private set; }
-        Func<object, IntPtr, IntPtr> NativeCall;
 
-        //delegate IntPtr PyCFunction(IntPtr self, IntPtr args);
-        PyCFunction _func;
-        //Func<IntPtr, IntPtr, IntPtr> PyCFunction;
+        private readonly PyCFunction _func;
 
         PyMethodDef def;
         IntPtr _methodDefPtr;
@@ -198,13 +196,8 @@ namespace Python.Runtime.Binder
         {
             Name = name;
             _func = func;
-            //def.ml_name = new StringBuilder(Name);
-            //def.ml_meth = Marshal.GetFunctionPointerForDelegate(func);
-
             IntPtr funcPtr = Marshal.GetFunctionPointerForDelegate(_func);
             _methodDefPtr = TypeManager.CreateMethodDef(Name, funcPtr, (int)METH.METH_VARARGS, null);
-            //IntPtr descr = Runtime.PyDescr_NewMethod(type, ref def);
-            //Runtime.PyCFunction_NewEx()
         }
 
         public static IntPtr tp_descr_get(IntPtr ds, IntPtr ob, IntPtr tp)
@@ -213,7 +206,7 @@ namespace Python.Runtime.Binder
             return Runtime.PyCFunction_NewEx(self._methodDefPtr, ob, IntPtr.Zero);
         }
 
-        public static void tp_dealloc(IntPtr ob)
+        public new static void tp_dealloc(IntPtr ob)
         {
             var self = (FastMethodCaller)GetManagedObject(ob);
             TypeManager.FreeMethodDef(self._methodDefPtr);

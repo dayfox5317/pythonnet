@@ -422,7 +422,7 @@ namespace Python.Runtime
                 }
             }
             //if (ok)
-            var binder = Binder.NativeBinder.GetBinder(type);
+            var binder = Binder.NativeBinderManager.GetBinder(type);
             // TODO: mix bind
             if (binder != null && binder.Bindable(name))
             {
