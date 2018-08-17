@@ -1,12 +1,15 @@
 using System;
 using System.Collections;
 using System.Reflection;
-
+using System.Linq;
 
 namespace Python.Runtime
 {
+    using Python.Runtime.Method;
 #if !AOT
     using System.Reflection.Emit;
+#endif
+
     /// <summary>
     /// The DelegateManager class manages the creation of true managed
     /// delegate instances that dispatch calls to Python methods.
@@ -14,22 +17,27 @@ namespace Python.Runtime
     internal class DelegateManager
     {
         private Hashtable cache;
-        private Type basetype;
         private Type listtype;
         private Type voidtype;
         private Type typetype;
         private Type ptrtype;
+
+#if !AOT
+        private Type basetype;
         private CodeGenerator codeGenerator;
+#endif
 
         public DelegateManager()
         {
-            basetype = typeof(Dispatcher);
             listtype = typeof(ArrayList);
             voidtype = typeof(void);
             typetype = typeof(Type);
             ptrtype = typeof(IntPtr);
             cache = new Hashtable();
+#if !AOT
+            basetype = typeof(Dispatcher);
             codeGenerator = new CodeGenerator();
+#endif
         }
 
         /// <summary>
@@ -39,14 +47,41 @@ namespace Python.Runtime
         /// </summary>
         public IntPtr GetPythonHandle(Delegate d)
         {
+#if AOT
+            if (d?.Target is DelegateMethod.IDelegateCaller)
+            {
+                var disp = (DelegateMethod.IDelegateCaller)d.Target;
+                return disp.PyTarget;
+            }
+#else
             if (d?.Target is Dispatcher)
             {
                 var disp = (Dispatcher)d.Target;
                 return disp.target;
             }
+#endif
             return IntPtr.Zero;
         }
-
+        
+#if AOT
+        internal static Type CreateStaticDelegateType(Type returnType, Type[] paramTypes)
+        {
+            Type[] types;
+            Type func;
+            if (returnType == typeof(void))
+            {
+                func = DelegateMethod.ActionDelegateCallerCreator.CreateDelgates[paramTypes.Length](paramTypes);
+            }
+            else
+            {
+                types = new Type[paramTypes.Length + 1];
+                paramTypes.CopyTo(types, 0);
+                types[paramTypes.Length] = returnType;
+                func = DelegateMethod.FuncDelegateCallerCreator.CreateDelgates[paramTypes.Length](types);
+            }
+            return func;
+        }
+#else
         /// <summary>
         /// GetDispatcher is responsible for creating a class that provides
         /// an appropriate managed callback method for a given delegate type.
@@ -148,7 +183,7 @@ namespace Python.Runtime
             cache[dtype] = disp;
             return disp;
         }
-
+#endif
         /// <summary>
         /// Given a delegate type and a callable Python object, GetDelegate
         /// returns an instance of the delegate type. The delegate instance
@@ -156,14 +191,25 @@ namespace Python.Runtime
         /// </summary>
         internal Delegate GetDelegate(Type dtype, IntPtr callable)
         {
+#if AOT
+            var method = dtype.GetMethod("Invoke");
+            var types = method.GetParameters().Select(T => T.ParameterType).ToArray();
+            var type = CreateStaticDelegateType(method.ReturnType, types);
+            var o = (DelegateMethod.IDelegateCaller)Activator.CreateInstance(type);
+            o.PyTarget = callable;
+            // FIXME: decref callbale
+            Runtime.XIncref(callable);
+#else
             Type dispatcher = GetDispatcher(dtype);
             object[] args = { callable, dtype };
             object o = Activator.CreateInstance(dispatcher, args);
+#endif
             return Delegate.CreateDelegate(dtype, o, "Invoke");
         }
     }
 
 
+#if !AOT
     /* When a delegate instance is created that has a Python implementation,
        the delegate manager generates a custom subclass of Dispatcher and
        instantiates it, passing the IntPtr of the Python callable.
@@ -281,10 +327,6 @@ namespace Python.Runtime
         public ConversionException(string msg) : base(msg)
         {
         }
-    }
-#else
-    internal class DelegateManager
-    {
     }
 #endif
 }

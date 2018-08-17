@@ -1,0 +1,251 @@
+<#@ template debug="true" hostSpecific="true" #>
+<#@ output extension=".cs" #>
+<#@ Assembly Name="System.Core" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Diagnostics" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Collections" #>
+<#@ import namespace="System.Collections.Generic" #> 
+<#
+    const int maxArgsCount = 16;
+    string[] actionGenerics = new string[maxArgsCount];
+    for (int i = 0; i < maxArgsCount; i++)
+    {
+        string[] paramStrs = new string[i + 1];
+        paramStrs[0] = "Cls";
+        for (int j = 0; j < i; j++)
+        {
+             paramStrs[j + 1] = string.Format("T{0}", j + 1);
+        }
+        string s = string.Join(",", paramStrs);
+        actionGenerics[i] = s;
+    }
+#>
+using System;
+using System.Reflection;
+using Python.Runtime.Binder;
+
+namespace Python.Runtime.DelegateMethod
+{
+    interface IDelegateCaller
+    {
+        IntPtr PyTarget { get; set; }
+    }
+
+    static class ActionDelegateCallerCreator
+    {
+        public static Func<Type[], Type>[] CreateDelgates = new Func<Type[], Type>[]
+        {
+<#      for (int i = 0; i < maxArgsCount; i++)
+        {
+#>
+            CreateActionCaller_<#= i #>,
+<#
+        }
+#>
+        };
+
+<#      for (int i = 0; i < maxArgsCount; i++)
+        {
+            string comma = i == 0 ? string.Empty : "<" + new string(',', i - 1) + ">";
+#>
+        static Type CreateActionCaller_<#= i #>(Type[] types)
+        {
+<#
+            if (i == 0)
+            {
+#>
+            return typeof(ActionDelegateCaller);
+<#
+            }
+            else
+            {
+#>
+            Type genericType = typeof(ActionDelegateCaller<#= comma #>);
+            return genericType.MakeGenericType(types);
+<#
+            }
+#>
+        }
+
+<#
+        }
+#>
+    }
+
+    static class FuncDelegateCallerCreator
+    {
+        public static Func<Type[], Type>[] CreateDelgates = new Func<Type[], Type>[]
+        {
+<#      for (int i = 0; i < maxArgsCount; i++)
+        {
+#>
+            CreateFuncCaller_<#= i #>,
+<#
+        }
+#>
+        };
+
+<#      for (int i = 0; i < maxArgsCount; i++)
+        {
+            string comma = "<" + new string(',', i) + ">";
+#>
+        static Type CreateFuncCaller_<#= i #>(Type[] types)
+        {
+            Type genericType = typeof(FuncDelegateCaller<#= comma #>);
+            return genericType.MakeGenericType(types);
+        }
+
+<#
+        }
+#>
+    }
+
+    class ActionDelegateCaller : IDelegateCaller
+    {
+        public IntPtr PyTarget { get; set; }
+
+        public void Invoke()
+        {
+            IntPtr gs = PythonEngine.AcquireLock();
+            try
+            {
+                IntPtr args = Runtime.PyTuple_New(0);
+                IntPtr res = Runtime.PyObject_Call(PyTarget, args, IntPtr.Zero);
+                Runtime.XDecref(args);
+                if (res == IntPtr.Zero) throw new PythonException();
+                Runtime.XDecref(res);
+            }
+            finally
+            {
+                PythonEngine.ReleaseLock(gs);
+            }
+        }
+    }
+
+<#
+    for (int i = 1; i <= maxArgsCount; i++)
+    {
+        string[] paramsStr = new string[i];
+        string[] argsStr = new string[i];
+        for (int j = 0; j < i; j++)
+        {
+            int num = j + 1;
+            paramsStr[j] = string.Format("T{0}", num);
+            argsStr[j] = string.Format("T{0} a{1}", num, num);
+        }
+        string genericParam = string.Join(", ", paramsStr);
+        string argStr = string.Join(", ", argsStr);
+#>
+    class ActionDelegateCaller<<#= genericParam #>> : IDelegateCaller
+    {
+        public IntPtr PyTarget { get; set; }
+
+        public void Invoke(<#= argStr #>)
+        {
+            IntPtr gs = PythonEngine.AcquireLock();
+            try
+            {
+            IntPtr args = Runtime.PyTuple_New(<#= i #>);
+            if (args == IntPtr.Zero) throw new PythonException();
+            try
+            {
+<#
+        for (int j = 1; j <= i; j++)
+        {
+#>
+                IntPtr item<#= j #> = PyValueConverter<<#= paramsStr[j - 1] #>>.Convert(a<#= j #>);
+                Runtime.PyTuple_SetItem(args, <#= j - 1 #>, item<#= j #>);
+<#
+        }
+#>
+            }
+            catch (Exception)
+            {
+                Runtime.XDecref(args);
+                throw;
+            }
+            IntPtr res = Runtime.PyObject_Call(PyTarget, args, IntPtr.Zero);
+            Runtime.XDecref(args);
+            if (res == IntPtr.Zero) throw new PythonException();
+            Runtime.XDecref(res);
+            }
+            finally
+            {
+                PythonEngine.ReleaseLock(gs);
+            }
+        }
+    }
+
+<#
+    }
+#>
+
+<#
+    for (int i = 0; i < maxArgsCount; i++)
+    {
+        string[] paramsStr = new string[i + 1];
+        string[] argsStr = new string[i];
+        for (int j = 0; j < i; j++)
+        {
+            int num = j + 1;
+            paramsStr[j] = string.Format("T{0}", num);
+            argsStr[j] = string.Format("T{0} a{1}", num, num);
+        }
+        paramsStr[i] = "TResult";
+        string genericParam = string.Join(", ", paramsStr);
+        string argStr = string.Join(", ", argsStr);
+
+#>
+    class FuncDelegateCaller<<#= genericParam #>> : IDelegateCaller
+    {
+        public IntPtr PyTarget { get; set; }
+
+        public TResult Invoke(<#= argStr #>)
+        {
+            IntPtr gs = PythonEngine.AcquireLock();
+            try
+            {
+            IntPtr args = Runtime.PyTuple_New(<#= i #>);
+            if (args == IntPtr.Zero) throw new PythonException();
+            try
+            {
+<#
+        for (int j = 1; j <= i; j++)
+        {
+#>
+                IntPtr item<#= j #> = PyValueConverter<<#= paramsStr[j - 1] #>>.Convert(a<#= j #>);
+                Runtime.PyTuple_SetItem(args, <#= j - 1 #>, item<#= j #>);
+<#
+        }
+#>
+            }
+            catch (Exception)
+            {
+                Runtime.XDecref(args);
+                throw;
+            }
+            IntPtr pyres = Runtime.PyObject_Call(PyTarget, args, IntPtr.Zero);
+            Runtime.XDecref(args);
+            if (pyres == IntPtr.Zero) throw new PythonException();
+            try
+            {
+                return ValueConverter<TResult>.Get(pyres);
+            }
+            finally
+            {
+                Runtime.XDecref(pyres);
+            }
+            }
+            finally
+            {
+                PythonEngine.ReleaseLock(gs);
+            }
+        }
+    }
+
+<#
+    }
+#>
+}

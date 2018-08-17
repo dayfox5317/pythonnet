@@ -99,10 +99,12 @@ namespace Python.Runtime
                 impl = new ExceptionClassObject(type);
             }
 
+#if !AOT
             else if (null != type.GetField("__pyobj__"))
             {
                 impl = new ClassDerivedObject(type);
             }
+#endif
 
             else
             {
@@ -118,11 +120,7 @@ namespace Python.Runtime
             // First, we introspect the managed type and build some class
             // information, including generating the member descriptors
             // that we'll be putting in the Python class __dict__.
-
-            //ClassInfo info = Binder.NativeBinder.GetStaticBindClassInfo(type);
-            //if (info == null)
-            //{
-            //}
+            
             ClassInfo info = GetClassInfo(type);
 
 

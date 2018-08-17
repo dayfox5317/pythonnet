@@ -150,6 +150,7 @@ namespace Python.Runtime
                 }
             }
 
+#if !AOT
             // it the type is a python subclass of a managed type then return the
             // underlying python object rather than construct a new wrapper object.
             var pyderived = value as IPythonDerivedType;
@@ -165,6 +166,7 @@ namespace Python.Runtime
                 }
                 #endif
             }
+#endif
 
             // hmm - from Python, we almost never care what the declared
             // type is. we'd rather have the object bound to the actual

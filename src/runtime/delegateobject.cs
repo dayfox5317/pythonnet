@@ -10,11 +10,15 @@ namespace Python.Runtime
     /// </summary>
     internal class DelegateObject : ClassBase
     {
+#if !AOT
         private MethodBinder binder;
+#endif
 
         internal DelegateObject(Type tp) : base(tp)
         {
+#if !AOT
             binder = new MethodBinder(tp.GetMethod("Invoke"));
+#endif
         }
 
 
@@ -39,7 +43,6 @@ namespace Python.Runtime
             return false;
         }
 
-
         /// <summary>
         /// DelegateObject __new__ implementation. The result of this is a new
         /// PyObject whose type is DelegateObject and whose ob_data is a handle
@@ -62,12 +65,8 @@ namespace Python.Runtime
             {
                 return Exceptions.RaiseTypeError("argument must be callable");
             }
-#if AOT
-            throw new NotImplementedException();
-#else
             Delegate d = PythonEngine.DelegateManager.GetDelegate(self.type, method);
             return CLRObject.GetInstHandle(d, self.pyHandle);
-#endif
         }
 
 
@@ -92,9 +91,32 @@ namespace Python.Runtime
             {
                 return Exceptions.RaiseTypeError("invalid argument");
             }
+#if AOT
+            return InvokeMulticastDelegate(d, args, kw);
+#else
             return self.binder.Invoke(ob, args, kw);
+#endif
         }
 
+        private static IntPtr InvokeMulticastDelegate(Delegate d, IntPtr args, IntPtr kw)
+        {
+            var dlist = d.GetInvocationList();
+            if (dlist.Length > 1)
+            {
+                IntPtr res = IntPtr.Zero;
+                for (int i = 0; i < dlist.Length; i++)
+                {
+                    res = InvokeMulticastDelegate(dlist[i], args, kw);
+                    if (i != dlist.Length - 1)
+                    {
+                        Runtime.XDecref(res);
+                    }
+                }
+                return res;
+            }
+            var caller = (DelegateMethod.IDelegateCaller)d.Target;
+            return Runtime.PyObject_Call(caller.PyTarget, args, kw);
+        }
 
         /// <summary>
         /// Implements __cmp__ for reflected delegate types.

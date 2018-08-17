@@ -422,15 +422,13 @@ namespace Python.Runtime
             return func;
         }
 
-        private static Type CreateStaticDelegateType(Type returnType, Type[] paramTypes)
+        internal static Type CreateStaticDelegateType(Type returnType, Type[] paramTypes)
         {
             Type[] types;
             Type func;
             if (returnType == typeof(void))
             {
-                types = new Type[paramTypes.Length];
-                paramTypes.CopyTo(types, 0);
-                func = Method.ActionStaticCallerCreator.CreateDelgates[paramTypes.Length](types);
+                func = Method.ActionStaticCallerCreator.CreateDelgates[paramTypes.Length](paramTypes);
             }
             else
             {
@@ -553,36 +551,8 @@ namespace Python.Runtime
 
     internal class DelegateBoundMethodObject : ExtensionType
     {
-        private DelegateCallableObject _caller;
-        //public DelegateCallableObject Caller { get { return _caller; } }
-
-        public IntPtr Target
-        {
-            get
-            {
-                return _target;
-            }
-
-            set
-            {
-                _target = value;
-            }
-        }
-
-        public DelegateCallableObject Caller
-        {
-            get
-            {
-                return _caller;
-            }
-
-            internal set
-            {
-                _caller = value;
-            }
-        }
-
-        private IntPtr _target;
+        public IntPtr Target { get; private set; }
+        public DelegateCallableObject Caller { get; private set; }
 
         public DelegateBoundMethodObject(IntPtr target, DelegateCallableObject caller)
         {
@@ -591,27 +561,27 @@ namespace Python.Runtime
 
         public bool IsCallable()
         {
-            return _caller != null && !_caller.Empty();
+            return Caller != null && !Caller.Empty();
         }
 
         public void Init(IntPtr target, DelegateCallableObject caller)
         {
             Runtime.XIncref(target);
-            _target = target;
-            _caller = caller;
+            Target = target;
+            Caller = caller;
         }
 
         public void Release()
         {
-            Runtime.XDecref(_target);
-            _target = IntPtr.Zero;
-            _caller = null;
+            Runtime.XDecref(Target);
+            Target = IntPtr.Zero;
+            Caller = null;
         }
 
         public static IntPtr tp_call(IntPtr ob, IntPtr args, IntPtr kw)
         {
             var self = (DelegateBoundMethodObject)GetManagedObject(ob);
-            return self._caller.PyCall(self._target, args);
+            return self.Caller.PyCall(self.Target, args);
         }
 
         public new static void tp_dealloc(IntPtr ob)

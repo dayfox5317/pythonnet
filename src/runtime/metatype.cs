@@ -81,6 +81,9 @@ namespace Python.Runtime
             // into python.
             if (IntPtr.Zero != dict)
             {
+#if AOT
+                return Exceptions.RaiseTypeError("Not supported for AOT mode");
+#endif
                 Runtime.XIncref(dict);
                 using (var clsDict = new PyDict(dict))
                 {

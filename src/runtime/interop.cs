@@ -467,7 +467,7 @@ namespace Python.Runtime
                 IntPtr tmp = Marshal.AllocHGlobal(IntPtr.Size);
                 Delegate d = Delegate.CreateDelegate(dt, method);
 #if AOT
-                fp = Marshal.GetFunctionPointerForDelegate(d);
+                IntPtr fp = Marshal.GetFunctionPointerForDelegate(d);
 #else
                 Thunk cb = new Thunk(d);
                 Marshal.StructureToPtr(cb, tmp, false);

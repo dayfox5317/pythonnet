@@ -540,7 +540,7 @@ namespace Python.Runtime
 
         internal static unsafe void XDecref(IntPtr op)
         {
-#if PYTHON_WITH_PYDEBUG || NETSTANDARD
+#if PYTHON_WITH_PYDEBUG || NETSTANDARD || AOT
             Py_DecRef(op);
             return;
 #else
@@ -569,7 +569,7 @@ namespace Python.Runtime
                     {
                         return;
                     }
-                    NativeCall.Impl.Void_Call_1(new IntPtr(f), op);
+                    NativeCall.Void_Call_1(new IntPtr(f), op);
                 }
             }
 #endif
