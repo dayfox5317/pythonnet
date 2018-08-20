@@ -335,23 +335,17 @@ namespace Python.Runtime
                             continue;
                         }
 
-                        //if (!pi.GetGetMethod(true).IsStatic)
-                        //{
-                        //    Type genericType = typeof(InstancePropertyObject<,>);
-                        //    Type impType  = genericType.MakeGenericType(pi.DeclaringType, pi.PropertyType);
-                        //    System.Diagnostics.Trace.WriteLine(impType);
-                        //    try
-                        //    {
-                        //        ob = (ManagedType)Activator.CreateInstance(impType, pi);
-                        //    }
-                        //    catch (Exception e)
-                        //    {
-                        //        Console.WriteLine(e);
-                        //        ob = new PropertyObject(pi);
-                        //    }
-                        //}
-                        //else
+                        try
                         {
+                            ob = GetDelegateProperty(pi);
+                            if (ob == null)
+                            {
+                                ob = new PropertyObject(pi);
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            //Console.WriteLine(e);
                             ob = new PropertyObject(pi);
                         }
 
@@ -408,18 +402,33 @@ namespace Python.Runtime
             return ci;
         }
 
+        private static ManagedType GetDelegateProperty(PropertyInfo pi)
+        {
+            ManagedType ob;
+            Type impType;
+            var getter = pi.GetGetMethod(true);
+            if (getter.IsStatic)
+            {
+                Type genericType = typeof(StaticPropertyObject<>);
+                impType = genericType.MakeGenericType(pi.PropertyType);
+            }
+            else
+            {
+                Type genericType = typeof(InstancePropertyObject<,>);
+                impType = genericType.MakeGenericType(pi.DeclaringType, pi.PropertyType);
+            }
+            // TODO: open generic type support
+            if (impType.ContainsGenericParameters)
+            {
+                return null;
+            }
+            ob = (ManagedType)Activator.CreateInstance(impType, pi);
+            return ob;
+        }
+
         private static ManagedType GetMethodObject(Type type, string name, MethodInfo[] mlist)
         {
             ManagedType ob;
-            bool ok = true;
-            foreach (var item1 in mlist)
-            {
-                if (item1.IsStatic)
-                {
-                    ok = false; break;
-                }
-            }
-            //if (ok)
             var binder = Binder.NativeBinderManager.GetBinder(type);
             // TODO: mix bind
             if (binder != null && binder.Bindable(name))
@@ -428,8 +437,6 @@ namespace Python.Runtime
             }
             try
             {
-                //ob = new MethodObject(type, name, mlist);
-                ob = null;
                 ob = MethodCreator.CreateDelegateMethod(type, name, mlist);
                 if (ob == null)
                 {
@@ -444,8 +451,6 @@ namespace Python.Runtime
                 ob = new MethodObject(type, name, mlist);
                 //throw;
             }
-            //else
-            //    ob = new MethodObject(type, name, mlist);
             return ob;
         }
     }

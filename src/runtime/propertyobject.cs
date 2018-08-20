@@ -163,7 +163,6 @@ namespace Python.Runtime
 
     internal class StaticPropertyObject<T> : ExtensionType
     {
-        private PropertyInfo info;
         Func<T> getter;
         Action<T> setter;
 
@@ -171,16 +170,36 @@ namespace Python.Runtime
         public StaticPropertyObject(PropertyInfo md)
         {
             var getterMethod = md.GetGetMethod(true);
-            
             getter = (Func<T>)Delegate.CreateDelegate(typeof(Func<T>), getterMethod);
+            if (md.CanWrite)
+            {
+                var setterMethod = md.GetSetMethod(true);
+                setter = (Action<T>)Delegate.CreateDelegate(typeof(Action<T>), setterMethod);
+            }
+        }
 
-            //setter = md.GetSetMethod(true);
+        public static IntPtr tp_descr_get(IntPtr ds, IntPtr ob, IntPtr tp)
+        {
+            var self = (StaticPropertyObject<T>)GetManagedObject(ds);
+            return PyValueConverter<T>.Convert(self.getter());
+        }
+
+        public new static int tp_descr_set(IntPtr ds, IntPtr ob, IntPtr val)
+        {
+            var self = (StaticPropertyObject<T>)GetManagedObject(ds);
+            if (self.setter == null)
+            {
+                Exceptions.RaiseTypeError("property is read-only");
+                return -1;
+            }
+            T value = ValueConverter<T>.Get(val);
+            self.setter(value);
+            return 0;
         }
     }
 
     internal class InstancePropertyObject<Cls, T> : ExtensionType
     {
-        private PropertyInfo info;
         Func<Cls, T> getter;
         Action<Cls, T> setter;
 
@@ -190,9 +209,9 @@ namespace Python.Runtime
             var getterMethod = md.GetGetMethod(true);
             getter = (Func<Cls, T>)Delegate.CreateDelegate(typeof(Func<Cls, T>), getterMethod);
 
-            var setterMethod = md.GetSetMethod(true);
-            if (setterMethod != null)
+            if (md.CanWrite)
             {
+                var setterMethod = md.GetSetMethod(true);
                 setter = (Action<Cls, T>)Delegate.CreateDelegate(typeof(Action<Cls, T>), setterMethod);
             }
         }
@@ -213,7 +232,6 @@ namespace Python.Runtime
                 return Exceptions.RaiseTypeError("invalid target");
             }
             T value = self.getter((Cls)co.inst);
-            var shit = typeof(T);
             return value.ToPythonPtr();
         }
 

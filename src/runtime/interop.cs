@@ -464,11 +464,11 @@ namespace Python.Runtime
 
             if (dt != null)
             {
-                IntPtr tmp = Marshal.AllocHGlobal(IntPtr.Size);
                 Delegate d = Delegate.CreateDelegate(dt, method);
 #if AOT
                 IntPtr fp = Marshal.GetFunctionPointerForDelegate(d);
 #else
+                IntPtr tmp = Marshal.AllocHGlobal(IntPtr.Size);
                 Thunk cb = new Thunk(d);
                 Marshal.StructureToPtr(cb, tmp, false);
                 IntPtr fp = Marshal.ReadIntPtr(tmp, 0);

@@ -28,7 +28,7 @@ namespace Python.Runtime
 
         public static int Int_Call_3(IntPtr fp, IntPtr a1, IntPtr a2, IntPtr a3)
         {
-            return ((Int_3_Delegate)Marshal.GetDelegateForFunctionPointer(fp, typeof(Int_3_Delegate)))(a1, a2, a3);
+            return ((Interop.ObjObjArgFunc)Marshal.GetDelegateForFunctionPointer(fp, typeof(Interop.ObjObjArgFunc)))(a1, a2, a3);
         }
     }
 #endif
