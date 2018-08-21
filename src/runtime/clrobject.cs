@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace Python.Runtime
@@ -6,7 +7,8 @@ namespace Python.Runtime
     internal class CLRObject : ManagedType
     {
         internal object inst;
-
+        internal static Dictionary<object, CLRObject> ObjDict { get; private set; } = new Dictionary<object, CLRObject>();
+        
         internal CLRObject(object ob, IntPtr tp)
         {
             IntPtr py = Runtime.PyType_GenericAlloc(tp, 0);
@@ -37,7 +39,15 @@ namespace Python.Runtime
 
         internal static CLRObject GetInstance(object ob, IntPtr pyType)
         {
-            return new CLRObject(ob, pyType);
+            CLRObject clrObj;
+            if (ObjDict.TryGetValue(ob, out clrObj))
+            {
+                Runtime.XIncref(clrObj.pyHandle);
+                return clrObj;
+            }
+            clrObj = new CLRObject(ob, pyType);
+            ObjDict.Add(ob, clrObj);
+            return clrObj;
         }
 
 
@@ -57,6 +67,12 @@ namespace Python.Runtime
 
         internal static IntPtr GetInstHandle(object ob, Type type)
         {
+            CLRObject clrObj;
+            if (ObjDict.TryGetValue(ob, out clrObj))
+            {
+                Runtime.XIncref(clrObj.pyHandle);
+                return clrObj.pyHandle;
+            }
             ClassBase cc = ClassManager.GetClass(type);
             CLRObject co = GetInstance(ob, cc.tpHandle);
             return co.pyHandle;

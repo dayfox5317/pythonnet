@@ -1390,7 +1390,9 @@ namespace Python.Runtime
                     IntPtr pyValue = PyValueConverterHelper.Convert(item);
                     Runtime.PyList_Append(list, pyValue);
                     Runtime.XDecref(pyValue);
+                    return list;
                 }
+                return list;
             }
             return value.ToPythonPtr();
             //return CLRObject.GetInstHandle(value);

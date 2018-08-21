@@ -276,6 +276,11 @@ namespace Python.Runtime
             {
                 Runtime.XDecref(dict);
             }
+            var clrObj = self as CLRObject;
+            if (clrObj != null)
+            {
+                CLRObject.ObjDict.Remove(clrObj.inst);
+            }
             Runtime.PyObject_GC_UnTrack(self.pyHandle);
             Runtime.PyObject_GC_Del(self.pyHandle);
             Runtime.XDecref(self.tpHandle);
