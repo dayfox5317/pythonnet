@@ -1148,7 +1148,6 @@ namespace Python.Runtime
 
         internal static T Get(IntPtr op)
         {
-            //int size = Runtime.PySequence_Size(op);
             var obj = ManagedType.GetManagedObject(op);
             if (obj is CLRObject)
             {
@@ -1187,9 +1186,33 @@ namespace Python.Runtime
         }
     }
 
+    static class EnumConverter<T, TValue> where T : struct, IConvertible
+    {
+        private static Dictionary<TValue, T> _map = new Dictionary<TValue, T>();
+
+        static EnumConverter()
+        {
+            foreach (var val in typeof(T).GetEnumValues())
+            {
+                _map[(TValue)val] = (T)val;
+            }
+        }
+
+        internal static T Get(IntPtr op)
+        {
+            TValue val = ValueConverter<TValue>.Get(op);
+            return _map[val];
+        }
+
+        internal static bool Is(IntPtr op)
+        {
+            TValue val = ValueConverter<TValue>.Get(op);
+            return _map.ContainsKey(val);
+        }
+    }
+
     class ConvertException : Exception
     {
-
     }
 
     static class ValueConverter<T>
@@ -1212,6 +1235,12 @@ namespace Python.Runtime
                 {
                     Get = ArraryConverter<T>.Get;
                 }
+            }
+            else if (_type.IsEnum)
+            {
+                var convererType = typeof(EnumConverter<,>).MakeGenericType(_type, _type.GetEnumUnderlyingType());
+                var mi = convererType.GetMethod("Get", BindingFlags.Static | BindingFlags.NonPublic);
+                Get = (Func<IntPtr, T>)Delegate.CreateDelegate(typeof(Func<IntPtr, T>), mi);
             }
         }
 

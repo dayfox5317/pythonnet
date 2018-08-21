@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace Python.Runtime.Binder
@@ -54,7 +55,12 @@ namespace Python.Runtime.Binder
 
         static TypeTraits()
         {
-
+            if (_type.IsEnum)
+            {
+                var convererType = typeof(EnumConverter<,>).MakeGenericType(_type, _type.GetEnumUnderlyingType());
+                var mi = convererType.GetMethod("Is", BindingFlags.Static | BindingFlags.NonPublic);
+                Is = (Func<IntPtr, bool>)Delegate.CreateDelegate(typeof(Func<IntPtr, bool>), mi);
+            }
         }
 
         static bool IsInt(IntPtr op)
@@ -62,19 +68,7 @@ namespace Python.Runtime.Binder
             IntPtr pyType = Runtime.PyObject_TYPE(op);
             return Runtime.PyIntType == pyType;
         }
-
-        //static bool DefaultChecker(IntPtr op)
-        //{
-        //    // TODO: handle inherit
-        //    if (_type.IsArray && !Runtime.PySequence_Check(op))
-        //    {
-        //        return CheckArray(op);
-        //    }
-        //    ClassBase cls = ClassManager.GetClass(_type);
-        //    IntPtr pyType = Runtime.PyObject_TYPE(op);
-        //    return cls.pyHandle == pyType;
-        //}
-
+        
         static bool CheckArray(IntPtr op)
         {
             Type elemType = _type.GetElementType();
