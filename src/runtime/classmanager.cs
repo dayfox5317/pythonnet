@@ -423,6 +423,9 @@ namespace Python.Runtime
                 return null;
             }
             ob = (ManagedType)Activator.CreateInstance(impType, pi);
+#if AOT
+            DynamicGenericHelper.RecordDynamicType(impType);
+#endif
             return ob;
         }
 

@@ -338,6 +338,7 @@ namespace Python.Runtime
             Exceptions.Initialize();
             ImportHook.Initialize();
 
+#if !ENABLE_IL2CPP
             // Need to add the runtime directory to sys.path so that we
             // can find built-in assemblies like System.Data, et. al.
             string rtdir = RuntimeEnvironment.GetRuntimeDirectory();
@@ -346,6 +347,7 @@ namespace Python.Runtime
             PyList_Append(path, item);
             XDecref(item);
             AssemblyManager.UpdatePath();
+#endif
         }
 
         internal static void Shutdown()

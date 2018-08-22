@@ -310,6 +310,9 @@ namespace Python.Runtime
             Type funcType = CreateDelegateType(boundType,
                 mi.ReturnType, paramTypes);
             var caller = (Method.IMethodCaller)Activator.CreateInstance(funcType, mi);
+#if AOT
+            DynamicGenericHelper.RecordDynamicType(funcType);
+#endif
             List<Method.IMethodCaller> callers;
             int paramCount = paramTypes.Length;
             if (!_callers.TryGetValue(paramCount, out callers))
@@ -327,6 +330,9 @@ namespace Python.Runtime
                 .Select(T => T.ParameterType).ToArray();
             Type funcType = CreateStaticDelegateType(mi.ReturnType, paramTypes);
             var caller = (Method.IMethodCaller)Activator.CreateInstance(funcType, mi);
+#if AOT
+            DynamicGenericHelper.RecordDynamicType(funcType);
+#endif
             List<Method.IMethodCaller> callers;
             int paramCount = paramTypes.Length;
             if (!_callers.TryGetValue(paramCount, out callers))
@@ -448,6 +454,9 @@ namespace Python.Runtime
     {
         public static ExtensionType CreateDelegateMethod(Type type, string name, MethodInfo[] info)
         {
+            // TODO : If it can support the GeneriType,
+            // It seems it's unnecessary for Python to using these incompatible methods,
+            // thus it can just skip the incompatible methods
             if (IsIncompatibleType(type)) return null;
             for (int i = 0; i < info.Length; i++)
             {
