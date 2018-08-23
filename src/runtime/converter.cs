@@ -117,22 +117,21 @@ namespace Python.Runtime
 
         internal static IntPtr ToPython(object value, Type type)
         {
+            // Null always converts to None in Python.
+            if (value == null)
+            {
+                Runtime.XIncref(Runtime.PyNone);
+                return Runtime.PyNone;
+            }
+
             if (value is PyObject)
             {
                 IntPtr handle = ((PyObject)value).Handle;
                 Runtime.XIncref(handle);
                 return handle;
             }
+
             IntPtr result = IntPtr.Zero;
-
-            // Null always converts to None in Python.
-
-            if (value == null)
-            {
-                result = Runtime.PyNone;
-                Runtime.XIncref(result);
-                return result;
-            }
 
             if (value is IList && value.GetType().IsGenericType)
             {
@@ -1272,30 +1271,13 @@ namespace Python.Runtime
             return (T)result;
             // TODO: raise TypeError
         }
-
-        //static T ConvertArray(IntPtr op)
-        //{
-        //    int size = Runtime.PySequence_Size(op);
-        //    for (int i = 0; i < size; i++)
-        //    {
-        //        IntPtr item = Runtime.PySequence_GetItem(op, i);
-        //        if (item == IntPtr.Zero)
-        //        {
-        //            throw new ArgumentNullException();
-        //        }
-        //        IntPtr pyCurType = Runtime.PyObject_TYPE(item);
-        //        if (!TypeCheck.CheckType(elemType, item))
-        //        {
-        //            return false;
-        //        }
-        //    }
-        //}
     }
 
 
     static class PyValueConverterHelper
     {
         internal static Dictionary<Type, Func<object, IntPtr>> ConvertMap = new Dictionary<Type, Func<object, IntPtr>>();
+        internal static readonly bool InitFlag = true;
 
         static PyValueConverterHelper()
         {
@@ -1308,14 +1290,18 @@ namespace Python.Runtime
 
             PyValueConverter<uint>.Convert = Runtime.PyLong_FromUnsignedLong;
             PyValueConverter<UInt64>.Convert = Runtime.PyLong_FromUnsignedLongLong;
-
             PyValueConverter<float>.Convert = (value) => Runtime.PyFloat_FromDouble(value);
             PyValueConverter<double>.Convert = Runtime.PyFloat_FromDouble;
             //PyValueConverter<decimal>.Convert = (value) =>
             //{
-            //    if (value > double.MaxValue || value < double.MinValue)
+            //    IntPtr pyStr = Runtime.PyString_FromString(value.ToString());
+            //    try
             //    {
-            //        (double)decimal.MaxValue
+            //        return Runtime.PyFloat_FromString(pyStr, IntPtr.Zero);
+            //    }
+            //    finally
+            //    {
+            //        Runtime.XDecref(pyStr);
             //    }
             //};
 
@@ -1371,6 +1357,7 @@ namespace Python.Runtime
     static class PyValueConverter<T>
     {
         public static Func<T, IntPtr> Convert = DefaultConverter;
+        private static readonly bool _ = PyValueConverterHelper.InitFlag;
 
         static IntPtr DefaultConverter(T value)
         {
@@ -1381,21 +1368,7 @@ namespace Python.Runtime
                 Runtime.XIncref(Runtime.PyNone);
                 return Runtime.PyNone;
             }
-            // FIXME: Just return a CLRObject?
-            if (value is IEnumerable)
-            {
-                IntPtr list = Runtime.PyList_New(0);
-                foreach (var item in (IEnumerable)value)
-                {
-                    IntPtr pyValue = PyValueConverterHelper.Convert(item);
-                    Runtime.PyList_Append(list, pyValue);
-                    Runtime.XDecref(pyValue);
-                    return list;
-                }
-                return list;
-            }
             return value.ToPythonPtr();
-            //return CLRObject.GetInstHandle(value);
         }
     }
 }
