@@ -267,6 +267,19 @@ namespace Python.Runtime
             Runtime.XDecref(op);
         }
 
+        public static void SetErrorWithoutOverride(Exception e)
+        {
+            if (ErrorOccurred())
+            {
+                return;
+            }
+            if (e.InnerException != null)
+            {
+                e = e.InnerException;
+            }
+            SetError(e);
+        }
+
         /// <summary>
         /// ErrorOccurred Method
         /// </summary>

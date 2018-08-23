@@ -181,7 +181,15 @@ namespace Python.Runtime
         public static IntPtr tp_descr_get(IntPtr ds, IntPtr ob, IntPtr tp)
         {
             var self = (StaticPropertyObject<T>)GetManagedObject(ds);
-            return PyValueConverter<T>.Convert(self.getter());
+            try
+            {
+                return PyValueConverter<T>.Convert(self.getter());
+            }
+            catch (Exception e)
+            {
+                Exceptions.SetErrorWithoutOverride(e);
+                return IntPtr.Zero;
+            }
         }
 
         public new static int tp_descr_set(IntPtr ds, IntPtr ob, IntPtr val)
@@ -192,8 +200,16 @@ namespace Python.Runtime
                 Exceptions.RaiseTypeError("property is read-only");
                 return -1;
             }
-            T value = ValueConverter<T>.Get(val);
-            self.setter(value);
+            try
+            {
+                T value = ValueConverter<T>.Get(val);
+                self.setter(value);
+            }
+            catch (Exception e)
+            {
+                Exceptions.SetErrorWithoutOverride(e);
+                return -1;
+            }
             return 0;
         }
     }
@@ -231,8 +247,16 @@ namespace Python.Runtime
             {
                 return Exceptions.RaiseTypeError("invalid target");
             }
-            T value = self.getter((Cls)co.inst);
-            return value.ToPythonPtr();
+            try
+            {
+                T value = self.getter((Cls)co.inst);
+                return value.ToPythonPtr();
+            }
+            catch (Exception e)
+            {
+                Exceptions.SetErrorWithoutOverride(e);
+                return IntPtr.Zero;
+            }
         }
 
         public new static int tp_descr_set(IntPtr ds, IntPtr ob, IntPtr val)
@@ -256,7 +280,15 @@ namespace Python.Runtime
                 Exceptions.RaiseTypeError("invalid target");
                 return -1;
             }
-            self.setter((Cls)co.inst, ValueConverter<T>.Get(val));
+            try
+            {
+                self.setter((Cls)co.inst, ValueConverter<T>.Get(val));
+            }
+            catch (Exception e)
+            {
+                Exceptions.SetErrorWithoutOverride(e);
+                return -1;
+            }
             return 0;
         }
     }
