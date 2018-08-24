@@ -171,10 +171,12 @@ namespace Python.Runtime
     internal class DelegatePropertyObject : ExtensionType
     {
         private IPropertyObject _propCaller;
+        private string _name;
 
         public DelegatePropertyObject(PropertyInfo md)
         {
             _propCaller = CreateProp(md);
+            _name = md.Name;
         }
 
         private static IPropertyObject CreateProp(PropertyInfo pi)
@@ -213,6 +215,12 @@ namespace Python.Runtime
         {
             var self = (DelegatePropertyObject)GetManagedObject(ds);
             return self._propCaller.OnDescrSet(ds, ob, val);
+        }
+
+        public static IntPtr tp_repr(IntPtr ob)
+        {
+            var self = (DelegatePropertyObject)GetManagedObject(ob);
+            return Runtime.PyString_FromString($"<property '{self._name}'>");
         }
     }
 

@@ -288,12 +288,13 @@ namespace Python.Runtime
 
     class DelegateCallableObject
     {
-        Dictionary<int, List<Method.IMethodCaller>> _callers;
-        private string _name;
+        public string Name { get; private set; }
+
+        private Dictionary<int, List<Method.IMethodCaller>> _callers;
 
         public DelegateCallableObject(string name)
         {
-            _name = name;
+            Name = name;
             _callers = new Dictionary<int, List<Method.IMethodCaller>>();
         }
 
@@ -398,7 +399,6 @@ namespace Python.Runtime
                 }
             }
             return Exceptions.RaiseTypeError("No match found for given type params");
-            //return IntPtr.Zero;
         }
 
         internal static Type CreateDelegateType(Type type, Type returnType, Type[] paramTypes)
@@ -551,6 +551,12 @@ namespace Python.Runtime
             var self = (DelegateMethodObject)GetManagedObject(ob);
             return self._caller.PyCall(ob, args);
         }
+
+        public static IntPtr tp_repr(IntPtr ob)
+        {
+            var self = (DelegateMethodObject)GetManagedObject(ob);
+            return Runtime.PyString_FromString($"<method '{self._caller.Name}'>");
+        }
     }
 
     internal class DelegateBoundMethodObject : ExtensionType
@@ -597,6 +603,14 @@ namespace Python.Runtime
                 return;
             }
             FinalizeObject(self);
+        }
+
+        public static IntPtr tp_repr(IntPtr ob)
+        {
+            var self = (DelegateBoundMethodObject)GetManagedObject(ob);
+            string type = self.Target == IntPtr.Zero ? "unbound" : "bound";
+            string name = self.Caller.Name;
+            return Runtime.PyString_FromString($"<{type} method '{name}'>");
         }
     }
 

@@ -356,13 +356,4 @@ namespace Python.Runtime
             return self._caller.PyCall(self._target, args);
         }
     }
-
-    internal class DelegateGenericBinding : ExtensionType
-    {
-
-        public DelegateGenericBinding()
-        {
-
-        }
-    }
 }
