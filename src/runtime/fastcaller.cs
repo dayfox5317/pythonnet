@@ -63,8 +63,15 @@ namespace Python.Runtime.Binder
     public abstract class WrapBinder
     {
         private Dictionary<string, PyCFunction> _methods = new Dictionary<string, PyCFunction>();
+        private Dictionary<string, Tuple<Interop.BinaryFunc, Interop.ObjObjFunc>> _fields;
+
         private PyCFunction _ctor;
         public Type Target { get; protected set; }
+
+        public WrapBinder()
+        {
+            _fields = new Dictionary<string, Tuple<Interop.BinaryFunc, Interop.ObjObjFunc>>();
+        }
 
         public void RegisterCtor(PyCFunction func)
         {
@@ -74,18 +81,12 @@ namespace Python.Runtime.Binder
         public void RegisterMethod(string name, PyCFunction func)
         {
             // TODO: Exception handler
-            PyCFunction wrapper = (self, args) =>
-            {
-                try
-                {
-                    return func(self, args);
-                }
-                catch (Exception)
-                {
-                    return IntPtr.Zero;
-                }
-            };
-            _methods.Add(name, wrapper);
+            _methods.Add(name, func);
+        }
+
+        public void RegisterField(string name, Interop.BinaryFunc getter, Interop.ObjObjFunc setter)
+        {
+            _fields.Add(name, Tuple.Create(getter, setter));
         }
 
         public bool Bindable(string name)
@@ -96,6 +97,16 @@ namespace Python.Runtime.Binder
         internal FastMethodCaller CreateBindCaller(string name)
         {
             return new FastMethodCaller(name, _methods[name]);
+        }
+
+        internal DelegateFieldObject CreateBindField(string name)
+        {
+            Tuple<Interop.BinaryFunc, Interop.ObjObjFunc> getset;
+            if (!_fields.TryGetValue(name, out getset))
+            {
+                return null;
+            }
+            return new DelegateFieldObject(name, getset.Item1, getset.Item2);
         }
 
         internal PyCFunction CreateCtorBinder()
@@ -121,12 +132,7 @@ namespace Python.Runtime.Binder
 
         public abstract void Register(Type type);
     }
-
-    public class StaticCallBinder
-    {
-
-    }
-
+    
 
     class SampleClass
     {

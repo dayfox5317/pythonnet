@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace Python.Runtime
 {
@@ -137,6 +138,57 @@ namespace Python.Runtime
         {
             var self = (FieldObject)GetManagedObject(ob);
             return Runtime.PyString_FromString($"<field '{self.info.Name}'>");
+        }
+    }
+
+
+    internal class DelegateFieldObject : ExtensionType
+    {
+        private string _name;
+        private Interop.BinaryFunc _getter;
+        private Interop.ObjObjFunc _setter;
+
+        public DelegateFieldObject(string name,
+            Interop.BinaryFunc getter, Interop.ObjObjFunc setter)
+        {
+            _getter = getter;
+            _setter = setter;
+            // set the descripters
+            //IntPtr pyType = Marshal.ReadIntPtr(pyHandle, TypeOffset.tp_dict);
+        }
+
+        public static IntPtr tp_descr_get(IntPtr ds, IntPtr ob, IntPtr tp)
+        {
+            var self = (DelegateFieldObject)GetManagedObject(ds);
+            try
+            {
+                return self._getter(ob, tp);
+            }
+            catch (Exception e)
+            {
+                Exceptions.SetError(e);
+                return IntPtr.Zero;
+            }
+        }
+
+        public new static int tp_descr_set(IntPtr ds, IntPtr ob, IntPtr val)
+        {
+            var self = (DelegateFieldObject)GetManagedObject(ds);
+            try
+            {
+                return self._setter(ob, val);
+            }
+            catch (Exception e)
+            {
+                Exceptions.SetError(e);
+                return -1;
+            }
+        }
+
+        public static IntPtr tp_repr(IntPtr ob)
+        {
+            var self = (DelegateFieldObject)GetManagedObject(ob);
+            return Runtime.PyString_FromString($"<field '{self._name}'>");
         }
     }
 }

@@ -332,7 +332,7 @@ namespace Python.Runtime
     // based lookup of the correct prototype for a particular Python type
     // slot and utilities for generating method thunks for managed methods.
 
-    internal class Interop
+    public class Interop
     {
         private static ArrayList keepAlive;
         private static Hashtable pmap;

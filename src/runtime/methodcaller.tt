@@ -350,8 +350,8 @@ namespace Python.Runtime.Method
             for (int j = 0; j < i; j++)
             {
                 int index = j + 1;
-                string s = string.Format("T{0} arg_{1} = ArgParser.Extract<T{2}>(args, {3});",
-                    index, index, index, j);
+                string s = string.Format("T{0} arg_{1} = ArgParser.Extract<T{2}>(args, start++);",
+                    index, index, index);
                 WriteLine(s);
                 callParams[j] = string.Format("arg_{0}", index);
             }

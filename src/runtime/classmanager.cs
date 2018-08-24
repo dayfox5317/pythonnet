@@ -344,7 +344,7 @@ namespace Python.Runtime
                         {
                             continue;
                         }
-                        ob = new FieldObject(fi);
+                        ob = GetFieldObject(fi);
                         ci.members[mi.Name] = ob;
                         continue;
 
@@ -401,6 +401,21 @@ namespace Python.Runtime
                 ob = new PropertyObject(pi);
             }
             return ob;
+        }
+
+        private static ManagedType GetFieldObject(FieldInfo fi)
+        {
+            var binder = Binder.NativeBinderManager.GetBinder(fi.DeclaringType);
+            if (binder != null)
+            {
+                ManagedType ob = binder.CreateBindField(fi.Name);
+                if (ob != null)
+                {
+                    return ob;
+                }
+            }
+
+            return new FieldObject(fi);
         }
 
         private static ManagedType GetMethodObject(Type type, string name, MethodInfo[] mlist)

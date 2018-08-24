@@ -394,7 +394,7 @@ namespace Python.Runtime
                 }
                 catch (Exception e)
                 {
-                    Exceptions.SetErrorWithoutOverride(e);
+                    Exceptions.SetError(e);
                     return IntPtr.Zero;
                 }
             }

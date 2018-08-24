@@ -1557,7 +1557,7 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args, int start)
         {
-            T1 arg_1 = ArgParser.Extract<T1>(args, 0);
+            T1 arg_1 = ArgParser.Extract<T1>(args, start++);
             TResult result = _func(arg_1);
             return PyValueConverter<TResult>.Convert(result);
         }
@@ -1603,8 +1603,8 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args, int start)
         {
-            T1 arg_1 = ArgParser.Extract<T1>(args, 0);
-            T2 arg_2 = ArgParser.Extract<T2>(args, 1);
+            T1 arg_1 = ArgParser.Extract<T1>(args, start++);
+            T2 arg_2 = ArgParser.Extract<T2>(args, start++);
             TResult result = _func(arg_1, arg_2);
             return PyValueConverter<TResult>.Convert(result);
         }
@@ -1651,9 +1651,9 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args, int start)
         {
-            T1 arg_1 = ArgParser.Extract<T1>(args, 0);
-            T2 arg_2 = ArgParser.Extract<T2>(args, 1);
-            T3 arg_3 = ArgParser.Extract<T3>(args, 2);
+            T1 arg_1 = ArgParser.Extract<T1>(args, start++);
+            T2 arg_2 = ArgParser.Extract<T2>(args, start++);
+            T3 arg_3 = ArgParser.Extract<T3>(args, start++);
             TResult result = _func(arg_1, arg_2, arg_3);
             return PyValueConverter<TResult>.Convert(result);
         }
@@ -1701,10 +1701,10 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args, int start)
         {
-            T1 arg_1 = ArgParser.Extract<T1>(args, 0);
-            T2 arg_2 = ArgParser.Extract<T2>(args, 1);
-            T3 arg_3 = ArgParser.Extract<T3>(args, 2);
-            T4 arg_4 = ArgParser.Extract<T4>(args, 3);
+            T1 arg_1 = ArgParser.Extract<T1>(args, start++);
+            T2 arg_2 = ArgParser.Extract<T2>(args, start++);
+            T3 arg_3 = ArgParser.Extract<T3>(args, start++);
+            T4 arg_4 = ArgParser.Extract<T4>(args, start++);
             TResult result = _func(arg_1, arg_2, arg_3, arg_4);
             return PyValueConverter<TResult>.Convert(result);
         }
@@ -1753,11 +1753,11 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args, int start)
         {
-            T1 arg_1 = ArgParser.Extract<T1>(args, 0);
-            T2 arg_2 = ArgParser.Extract<T2>(args, 1);
-            T3 arg_3 = ArgParser.Extract<T3>(args, 2);
-            T4 arg_4 = ArgParser.Extract<T4>(args, 3);
-            T5 arg_5 = ArgParser.Extract<T5>(args, 4);
+            T1 arg_1 = ArgParser.Extract<T1>(args, start++);
+            T2 arg_2 = ArgParser.Extract<T2>(args, start++);
+            T3 arg_3 = ArgParser.Extract<T3>(args, start++);
+            T4 arg_4 = ArgParser.Extract<T4>(args, start++);
+            T5 arg_5 = ArgParser.Extract<T5>(args, start++);
             TResult result = _func(arg_1, arg_2, arg_3, arg_4, arg_5);
             return PyValueConverter<TResult>.Convert(result);
         }
@@ -1807,12 +1807,12 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args, int start)
         {
-            T1 arg_1 = ArgParser.Extract<T1>(args, 0);
-            T2 arg_2 = ArgParser.Extract<T2>(args, 1);
-            T3 arg_3 = ArgParser.Extract<T3>(args, 2);
-            T4 arg_4 = ArgParser.Extract<T4>(args, 3);
-            T5 arg_5 = ArgParser.Extract<T5>(args, 4);
-            T6 arg_6 = ArgParser.Extract<T6>(args, 5);
+            T1 arg_1 = ArgParser.Extract<T1>(args, start++);
+            T2 arg_2 = ArgParser.Extract<T2>(args, start++);
+            T3 arg_3 = ArgParser.Extract<T3>(args, start++);
+            T4 arg_4 = ArgParser.Extract<T4>(args, start++);
+            T5 arg_5 = ArgParser.Extract<T5>(args, start++);
+            T6 arg_6 = ArgParser.Extract<T6>(args, start++);
             TResult result = _func(arg_1, arg_2, arg_3, arg_4, arg_5, arg_6);
             return PyValueConverter<TResult>.Convert(result);
         }
@@ -1863,13 +1863,13 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args, int start)
         {
-            T1 arg_1 = ArgParser.Extract<T1>(args, 0);
-            T2 arg_2 = ArgParser.Extract<T2>(args, 1);
-            T3 arg_3 = ArgParser.Extract<T3>(args, 2);
-            T4 arg_4 = ArgParser.Extract<T4>(args, 3);
-            T5 arg_5 = ArgParser.Extract<T5>(args, 4);
-            T6 arg_6 = ArgParser.Extract<T6>(args, 5);
-            T7 arg_7 = ArgParser.Extract<T7>(args, 6);
+            T1 arg_1 = ArgParser.Extract<T1>(args, start++);
+            T2 arg_2 = ArgParser.Extract<T2>(args, start++);
+            T3 arg_3 = ArgParser.Extract<T3>(args, start++);
+            T4 arg_4 = ArgParser.Extract<T4>(args, start++);
+            T5 arg_5 = ArgParser.Extract<T5>(args, start++);
+            T6 arg_6 = ArgParser.Extract<T6>(args, start++);
+            T7 arg_7 = ArgParser.Extract<T7>(args, start++);
             TResult result = _func(arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7);
             return PyValueConverter<TResult>.Convert(result);
         }
@@ -1921,14 +1921,14 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args, int start)
         {
-            T1 arg_1 = ArgParser.Extract<T1>(args, 0);
-            T2 arg_2 = ArgParser.Extract<T2>(args, 1);
-            T3 arg_3 = ArgParser.Extract<T3>(args, 2);
-            T4 arg_4 = ArgParser.Extract<T4>(args, 3);
-            T5 arg_5 = ArgParser.Extract<T5>(args, 4);
-            T6 arg_6 = ArgParser.Extract<T6>(args, 5);
-            T7 arg_7 = ArgParser.Extract<T7>(args, 6);
-            T8 arg_8 = ArgParser.Extract<T8>(args, 7);
+            T1 arg_1 = ArgParser.Extract<T1>(args, start++);
+            T2 arg_2 = ArgParser.Extract<T2>(args, start++);
+            T3 arg_3 = ArgParser.Extract<T3>(args, start++);
+            T4 arg_4 = ArgParser.Extract<T4>(args, start++);
+            T5 arg_5 = ArgParser.Extract<T5>(args, start++);
+            T6 arg_6 = ArgParser.Extract<T6>(args, start++);
+            T7 arg_7 = ArgParser.Extract<T7>(args, start++);
+            T8 arg_8 = ArgParser.Extract<T8>(args, start++);
             TResult result = _func(arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8);
             return PyValueConverter<TResult>.Convert(result);
         }
@@ -1981,15 +1981,15 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args, int start)
         {
-            T1 arg_1 = ArgParser.Extract<T1>(args, 0);
-            T2 arg_2 = ArgParser.Extract<T2>(args, 1);
-            T3 arg_3 = ArgParser.Extract<T3>(args, 2);
-            T4 arg_4 = ArgParser.Extract<T4>(args, 3);
-            T5 arg_5 = ArgParser.Extract<T5>(args, 4);
-            T6 arg_6 = ArgParser.Extract<T6>(args, 5);
-            T7 arg_7 = ArgParser.Extract<T7>(args, 6);
-            T8 arg_8 = ArgParser.Extract<T8>(args, 7);
-            T9 arg_9 = ArgParser.Extract<T9>(args, 8);
+            T1 arg_1 = ArgParser.Extract<T1>(args, start++);
+            T2 arg_2 = ArgParser.Extract<T2>(args, start++);
+            T3 arg_3 = ArgParser.Extract<T3>(args, start++);
+            T4 arg_4 = ArgParser.Extract<T4>(args, start++);
+            T5 arg_5 = ArgParser.Extract<T5>(args, start++);
+            T6 arg_6 = ArgParser.Extract<T6>(args, start++);
+            T7 arg_7 = ArgParser.Extract<T7>(args, start++);
+            T8 arg_8 = ArgParser.Extract<T8>(args, start++);
+            T9 arg_9 = ArgParser.Extract<T9>(args, start++);
             TResult result = _func(arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9);
             return PyValueConverter<TResult>.Convert(result);
         }
@@ -2043,16 +2043,16 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args, int start)
         {
-            T1 arg_1 = ArgParser.Extract<T1>(args, 0);
-            T2 arg_2 = ArgParser.Extract<T2>(args, 1);
-            T3 arg_3 = ArgParser.Extract<T3>(args, 2);
-            T4 arg_4 = ArgParser.Extract<T4>(args, 3);
-            T5 arg_5 = ArgParser.Extract<T5>(args, 4);
-            T6 arg_6 = ArgParser.Extract<T6>(args, 5);
-            T7 arg_7 = ArgParser.Extract<T7>(args, 6);
-            T8 arg_8 = ArgParser.Extract<T8>(args, 7);
-            T9 arg_9 = ArgParser.Extract<T9>(args, 8);
-            T10 arg_10 = ArgParser.Extract<T10>(args, 9);
+            T1 arg_1 = ArgParser.Extract<T1>(args, start++);
+            T2 arg_2 = ArgParser.Extract<T2>(args, start++);
+            T3 arg_3 = ArgParser.Extract<T3>(args, start++);
+            T4 arg_4 = ArgParser.Extract<T4>(args, start++);
+            T5 arg_5 = ArgParser.Extract<T5>(args, start++);
+            T6 arg_6 = ArgParser.Extract<T6>(args, start++);
+            T7 arg_7 = ArgParser.Extract<T7>(args, start++);
+            T8 arg_8 = ArgParser.Extract<T8>(args, start++);
+            T9 arg_9 = ArgParser.Extract<T9>(args, start++);
+            T10 arg_10 = ArgParser.Extract<T10>(args, start++);
             TResult result = _func(arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10);
             return PyValueConverter<TResult>.Convert(result);
         }
@@ -2107,17 +2107,17 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args, int start)
         {
-            T1 arg_1 = ArgParser.Extract<T1>(args, 0);
-            T2 arg_2 = ArgParser.Extract<T2>(args, 1);
-            T3 arg_3 = ArgParser.Extract<T3>(args, 2);
-            T4 arg_4 = ArgParser.Extract<T4>(args, 3);
-            T5 arg_5 = ArgParser.Extract<T5>(args, 4);
-            T6 arg_6 = ArgParser.Extract<T6>(args, 5);
-            T7 arg_7 = ArgParser.Extract<T7>(args, 6);
-            T8 arg_8 = ArgParser.Extract<T8>(args, 7);
-            T9 arg_9 = ArgParser.Extract<T9>(args, 8);
-            T10 arg_10 = ArgParser.Extract<T10>(args, 9);
-            T11 arg_11 = ArgParser.Extract<T11>(args, 10);
+            T1 arg_1 = ArgParser.Extract<T1>(args, start++);
+            T2 arg_2 = ArgParser.Extract<T2>(args, start++);
+            T3 arg_3 = ArgParser.Extract<T3>(args, start++);
+            T4 arg_4 = ArgParser.Extract<T4>(args, start++);
+            T5 arg_5 = ArgParser.Extract<T5>(args, start++);
+            T6 arg_6 = ArgParser.Extract<T6>(args, start++);
+            T7 arg_7 = ArgParser.Extract<T7>(args, start++);
+            T8 arg_8 = ArgParser.Extract<T8>(args, start++);
+            T9 arg_9 = ArgParser.Extract<T9>(args, start++);
+            T10 arg_10 = ArgParser.Extract<T10>(args, start++);
+            T11 arg_11 = ArgParser.Extract<T11>(args, start++);
             TResult result = _func(arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11);
             return PyValueConverter<TResult>.Convert(result);
         }
@@ -2173,18 +2173,18 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args, int start)
         {
-            T1 arg_1 = ArgParser.Extract<T1>(args, 0);
-            T2 arg_2 = ArgParser.Extract<T2>(args, 1);
-            T3 arg_3 = ArgParser.Extract<T3>(args, 2);
-            T4 arg_4 = ArgParser.Extract<T4>(args, 3);
-            T5 arg_5 = ArgParser.Extract<T5>(args, 4);
-            T6 arg_6 = ArgParser.Extract<T6>(args, 5);
-            T7 arg_7 = ArgParser.Extract<T7>(args, 6);
-            T8 arg_8 = ArgParser.Extract<T8>(args, 7);
-            T9 arg_9 = ArgParser.Extract<T9>(args, 8);
-            T10 arg_10 = ArgParser.Extract<T10>(args, 9);
-            T11 arg_11 = ArgParser.Extract<T11>(args, 10);
-            T12 arg_12 = ArgParser.Extract<T12>(args, 11);
+            T1 arg_1 = ArgParser.Extract<T1>(args, start++);
+            T2 arg_2 = ArgParser.Extract<T2>(args, start++);
+            T3 arg_3 = ArgParser.Extract<T3>(args, start++);
+            T4 arg_4 = ArgParser.Extract<T4>(args, start++);
+            T5 arg_5 = ArgParser.Extract<T5>(args, start++);
+            T6 arg_6 = ArgParser.Extract<T6>(args, start++);
+            T7 arg_7 = ArgParser.Extract<T7>(args, start++);
+            T8 arg_8 = ArgParser.Extract<T8>(args, start++);
+            T9 arg_9 = ArgParser.Extract<T9>(args, start++);
+            T10 arg_10 = ArgParser.Extract<T10>(args, start++);
+            T11 arg_11 = ArgParser.Extract<T11>(args, start++);
+            T12 arg_12 = ArgParser.Extract<T12>(args, start++);
             TResult result = _func(arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11, arg_12);
             return PyValueConverter<TResult>.Convert(result);
         }
@@ -2241,19 +2241,19 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args, int start)
         {
-            T1 arg_1 = ArgParser.Extract<T1>(args, 0);
-            T2 arg_2 = ArgParser.Extract<T2>(args, 1);
-            T3 arg_3 = ArgParser.Extract<T3>(args, 2);
-            T4 arg_4 = ArgParser.Extract<T4>(args, 3);
-            T5 arg_5 = ArgParser.Extract<T5>(args, 4);
-            T6 arg_6 = ArgParser.Extract<T6>(args, 5);
-            T7 arg_7 = ArgParser.Extract<T7>(args, 6);
-            T8 arg_8 = ArgParser.Extract<T8>(args, 7);
-            T9 arg_9 = ArgParser.Extract<T9>(args, 8);
-            T10 arg_10 = ArgParser.Extract<T10>(args, 9);
-            T11 arg_11 = ArgParser.Extract<T11>(args, 10);
-            T12 arg_12 = ArgParser.Extract<T12>(args, 11);
-            T13 arg_13 = ArgParser.Extract<T13>(args, 12);
+            T1 arg_1 = ArgParser.Extract<T1>(args, start++);
+            T2 arg_2 = ArgParser.Extract<T2>(args, start++);
+            T3 arg_3 = ArgParser.Extract<T3>(args, start++);
+            T4 arg_4 = ArgParser.Extract<T4>(args, start++);
+            T5 arg_5 = ArgParser.Extract<T5>(args, start++);
+            T6 arg_6 = ArgParser.Extract<T6>(args, start++);
+            T7 arg_7 = ArgParser.Extract<T7>(args, start++);
+            T8 arg_8 = ArgParser.Extract<T8>(args, start++);
+            T9 arg_9 = ArgParser.Extract<T9>(args, start++);
+            T10 arg_10 = ArgParser.Extract<T10>(args, start++);
+            T11 arg_11 = ArgParser.Extract<T11>(args, start++);
+            T12 arg_12 = ArgParser.Extract<T12>(args, start++);
+            T13 arg_13 = ArgParser.Extract<T13>(args, start++);
             TResult result = _func(arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11, arg_12, arg_13);
             return PyValueConverter<TResult>.Convert(result);
         }
@@ -2311,20 +2311,20 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args, int start)
         {
-            T1 arg_1 = ArgParser.Extract<T1>(args, 0);
-            T2 arg_2 = ArgParser.Extract<T2>(args, 1);
-            T3 arg_3 = ArgParser.Extract<T3>(args, 2);
-            T4 arg_4 = ArgParser.Extract<T4>(args, 3);
-            T5 arg_5 = ArgParser.Extract<T5>(args, 4);
-            T6 arg_6 = ArgParser.Extract<T6>(args, 5);
-            T7 arg_7 = ArgParser.Extract<T7>(args, 6);
-            T8 arg_8 = ArgParser.Extract<T8>(args, 7);
-            T9 arg_9 = ArgParser.Extract<T9>(args, 8);
-            T10 arg_10 = ArgParser.Extract<T10>(args, 9);
-            T11 arg_11 = ArgParser.Extract<T11>(args, 10);
-            T12 arg_12 = ArgParser.Extract<T12>(args, 11);
-            T13 arg_13 = ArgParser.Extract<T13>(args, 12);
-            T14 arg_14 = ArgParser.Extract<T14>(args, 13);
+            T1 arg_1 = ArgParser.Extract<T1>(args, start++);
+            T2 arg_2 = ArgParser.Extract<T2>(args, start++);
+            T3 arg_3 = ArgParser.Extract<T3>(args, start++);
+            T4 arg_4 = ArgParser.Extract<T4>(args, start++);
+            T5 arg_5 = ArgParser.Extract<T5>(args, start++);
+            T6 arg_6 = ArgParser.Extract<T6>(args, start++);
+            T7 arg_7 = ArgParser.Extract<T7>(args, start++);
+            T8 arg_8 = ArgParser.Extract<T8>(args, start++);
+            T9 arg_9 = ArgParser.Extract<T9>(args, start++);
+            T10 arg_10 = ArgParser.Extract<T10>(args, start++);
+            T11 arg_11 = ArgParser.Extract<T11>(args, start++);
+            T12 arg_12 = ArgParser.Extract<T12>(args, start++);
+            T13 arg_13 = ArgParser.Extract<T13>(args, start++);
+            T14 arg_14 = ArgParser.Extract<T14>(args, start++);
             TResult result = _func(arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11, arg_12, arg_13, arg_14);
             return PyValueConverter<TResult>.Convert(result);
         }
@@ -2383,21 +2383,21 @@ namespace Python.Runtime.Method
 
         public IntPtr Call(IntPtr self, IntPtr args, int start)
         {
-            T1 arg_1 = ArgParser.Extract<T1>(args, 0);
-            T2 arg_2 = ArgParser.Extract<T2>(args, 1);
-            T3 arg_3 = ArgParser.Extract<T3>(args, 2);
-            T4 arg_4 = ArgParser.Extract<T4>(args, 3);
-            T5 arg_5 = ArgParser.Extract<T5>(args, 4);
-            T6 arg_6 = ArgParser.Extract<T6>(args, 5);
-            T7 arg_7 = ArgParser.Extract<T7>(args, 6);
-            T8 arg_8 = ArgParser.Extract<T8>(args, 7);
-            T9 arg_9 = ArgParser.Extract<T9>(args, 8);
-            T10 arg_10 = ArgParser.Extract<T10>(args, 9);
-            T11 arg_11 = ArgParser.Extract<T11>(args, 10);
-            T12 arg_12 = ArgParser.Extract<T12>(args, 11);
-            T13 arg_13 = ArgParser.Extract<T13>(args, 12);
-            T14 arg_14 = ArgParser.Extract<T14>(args, 13);
-            T15 arg_15 = ArgParser.Extract<T15>(args, 14);
+            T1 arg_1 = ArgParser.Extract<T1>(args, start++);
+            T2 arg_2 = ArgParser.Extract<T2>(args, start++);
+            T3 arg_3 = ArgParser.Extract<T3>(args, start++);
+            T4 arg_4 = ArgParser.Extract<T4>(args, start++);
+            T5 arg_5 = ArgParser.Extract<T5>(args, start++);
+            T6 arg_6 = ArgParser.Extract<T6>(args, start++);
+            T7 arg_7 = ArgParser.Extract<T7>(args, start++);
+            T8 arg_8 = ArgParser.Extract<T8>(args, start++);
+            T9 arg_9 = ArgParser.Extract<T9>(args, start++);
+            T10 arg_10 = ArgParser.Extract<T10>(args, start++);
+            T11 arg_11 = ArgParser.Extract<T11>(args, start++);
+            T12 arg_12 = ArgParser.Extract<T12>(args, start++);
+            T13 arg_13 = ArgParser.Extract<T13>(args, start++);
+            T14 arg_14 = ArgParser.Extract<T14>(args, start++);
+            T15 arg_15 = ArgParser.Extract<T15>(args, start++);
             TResult result = _func(arg_1, arg_2, arg_3, arg_4, arg_5, arg_6, arg_7, arg_8, arg_9, arg_10, arg_11, arg_12, arg_13, arg_14, arg_15);
             return PyValueConverter<TResult>.Convert(result);
         }
