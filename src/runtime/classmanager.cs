@@ -334,21 +334,7 @@ namespace Python.Runtime
                             idx.AddProperty(pi);
                             continue;
                         }
-
-                        try
-                        {
-                            ob = GetDelegateProperty(pi);
-                            if (ob == null)
-                            {
-                                ob = new PropertyObject(pi);
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            //Console.WriteLine(e);
-                            ob = new PropertyObject(pi);
-                        }
-
+                        ob = GetPropertyObject(pi);
                         ci.members[pi.Name] = ob;
                         continue;
 
@@ -402,30 +388,18 @@ namespace Python.Runtime
             return ci;
         }
 
-        private static ManagedType GetDelegateProperty(PropertyInfo pi)
+        private static ManagedType GetPropertyObject(PropertyInfo pi)
         {
             ManagedType ob;
-            Type impType;
-            var getter = pi.GetGetMethod(true);
-            if (getter.IsStatic)
+            try
             {
-                Type genericType = typeof(StaticPropertyObject<>);
-                impType = genericType.MakeGenericType(pi.PropertyType);
+                ob = new DelegatePropertyObject(pi);
             }
-            else
+            catch (Exception)
             {
-                Type genericType = typeof(InstancePropertyObject<,>);
-                impType = genericType.MakeGenericType(pi.DeclaringType, pi.PropertyType);
+                // TODO: warning
+                ob = new PropertyObject(pi);
             }
-            // TODO: open generic type support
-            if (impType.ContainsGenericParameters)
-            {
-                return null;
-            }
-            ob = (ManagedType)Activator.CreateInstance(impType, pi);
-#if AOT
-            DynamicGenericHelper.RecordDynamicType(impType);
-#endif
             return ob;
         }
 

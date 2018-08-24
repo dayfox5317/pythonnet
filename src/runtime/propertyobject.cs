@@ -161,29 +161,82 @@ namespace Python.Runtime
         }
     }
 
-    internal class StaticPropertyObject<T> : ExtensionType
-    {
-        Func<T> getter;
-        Action<T> setter;
 
-        [StrongNameIdentityPermission(SecurityAction.Assert)]
-        public StaticPropertyObject(PropertyInfo md)
+    internal interface IPropertyObject
+    {
+        IntPtr OnDescrGet(IntPtr ds, IntPtr ob, IntPtr tp);
+        int OnDescrSet(IntPtr ds, IntPtr ob, IntPtr val);
+    }
+
+    internal class DelegatePropertyObject : ExtensionType
+    {
+        private IPropertyObject _propCaller;
+
+        public DelegatePropertyObject(PropertyInfo md)
         {
-            var getterMethod = md.GetGetMethod(true);
-            getter = (Func<T>)Delegate.CreateDelegate(typeof(Func<T>), getterMethod);
-            if (md.CanWrite)
+            _propCaller = CreateProp(md);
+        }
+
+        private static IPropertyObject CreateProp(PropertyInfo pi)
+        {
+            Type impType;
+            var getter = pi.GetGetMethod(true);
+            if (getter.IsStatic)
             {
-                var setterMethod = md.GetSetMethod(true);
-                setter = (Action<T>)Delegate.CreateDelegate(typeof(Action<T>), setterMethod);
+                Type genericType = typeof(StaticPropertyObject<>);
+                impType = genericType.MakeGenericType(pi.PropertyType);
             }
+            else
+            {
+                Type genericType = typeof(InstancePropertyObject<,>);
+                impType = genericType.MakeGenericType(pi.DeclaringType, pi.PropertyType);
+            }
+            // TODO: open generic type support
+            if (impType.ContainsGenericParameters)
+            {
+                throw new NotImplementedException();
+            }
+            IPropertyObject prop = (IPropertyObject)Activator.CreateInstance(impType, pi);
+#if AOT
+            DynamicGenericHelper.RecordDynamicType(impType);
+#endif
+            return prop;
         }
 
         public static IntPtr tp_descr_get(IntPtr ds, IntPtr ob, IntPtr tp)
         {
-            var self = (StaticPropertyObject<T>)GetManagedObject(ds);
+            var self = (DelegatePropertyObject)GetManagedObject(ds);
+            return self._propCaller.OnDescrGet(ds, ob, tp);
+        }
+
+        public new static int tp_descr_set(IntPtr ds, IntPtr ob, IntPtr val)
+        {
+            var self = (DelegatePropertyObject)GetManagedObject(ds);
+            return self._propCaller.OnDescrSet(ds, ob, val);
+        }
+    }
+
+    internal class StaticPropertyObject<T> : IPropertyObject
+    {
+        private Func<T> _getter;
+        private Action<T> _setter;
+
+        public StaticPropertyObject(PropertyInfo md)
+        {
+            var getterMethod = md.GetGetMethod(true);
+            _getter = (Func<T>)Delegate.CreateDelegate(typeof(Func<T>), getterMethod);
+            if (md.CanWrite)
+            {
+                var setterMethod = md.GetSetMethod(true);
+                _setter = (Action<T>)Delegate.CreateDelegate(typeof(Action<T>), setterMethod);
+            }
+        }
+
+        public IntPtr OnDescrGet(IntPtr ds, IntPtr ob, IntPtr tp)
+        {
             try
             {
-                return PyValueConverter<T>.Convert(self.getter());
+                return PyValueConverter<T>.Convert(_getter());
             }
             catch (Exception e)
             {
@@ -192,10 +245,9 @@ namespace Python.Runtime
             }
         }
 
-        public new static int tp_descr_set(IntPtr ds, IntPtr ob, IntPtr val)
+        public int OnDescrSet(IntPtr ds, IntPtr ob, IntPtr val)
         {
-            var self = (StaticPropertyObject<T>)GetManagedObject(ds);
-            if (self.setter == null)
+            if (_setter == null)
             {
                 Exceptions.RaiseTypeError("property is read-only");
                 return -1;
@@ -203,7 +255,7 @@ namespace Python.Runtime
             try
             {
                 T value = ValueConverter<T>.Get(val);
-                self.setter(value);
+                _setter(value);
             }
             catch (Exception e)
             {
@@ -214,27 +266,24 @@ namespace Python.Runtime
         }
     }
 
-    internal class InstancePropertyObject<Cls, T> : ExtensionType
+    internal class InstancePropertyObject<Cls, T> : IPropertyObject
     {
-        Func<Cls, T> getter;
-        Action<Cls, T> setter;
+        private Func<Cls, T> _getter;
+        private Action<Cls, T> _setter;
 
-        [StrongNameIdentityPermission(SecurityAction.Assert)]
         public InstancePropertyObject(PropertyInfo md)
         {
             var getterMethod = md.GetGetMethod(true);
-            getter = (Func<Cls, T>)Delegate.CreateDelegate(typeof(Func<Cls, T>), getterMethod);
-
+            _getter = (Func<Cls, T>)Delegate.CreateDelegate(typeof(Func<Cls, T>), getterMethod);
             if (md.CanWrite)
             {
                 var setterMethod = md.GetSetMethod(true);
-                setter = (Action<Cls, T>)Delegate.CreateDelegate(typeof(Action<Cls, T>), setterMethod);
+                _setter = (Action<Cls, T>)Delegate.CreateDelegate(typeof(Action<Cls, T>), setterMethod);
             }
         }
 
-        public static IntPtr tp_descr_get(IntPtr ds, IntPtr ob, IntPtr tp)
+        public IntPtr OnDescrGet(IntPtr ds, IntPtr ob, IntPtr tp)
         {
-            var self = (InstancePropertyObject<Cls, T>)GetManagedObject(ds);
             if (ob == IntPtr.Zero || ob == Runtime.PyNone)
             {
                 Exceptions.SetError(Exceptions.TypeError,
@@ -242,15 +291,15 @@ namespace Python.Runtime
                 return IntPtr.Zero;
             }
 
-            var co = GetManagedObject(ob) as CLRObject;
+            var co = ManagedType.GetManagedObject(ob) as CLRObject;
             if (co == null)
             {
                 return Exceptions.RaiseTypeError("invalid target");
             }
             try
             {
-                T value = self.getter((Cls)co.inst);
-                return value.ToPythonPtr();
+                T value = _getter((Cls)co.inst);
+                return PyValueConverter<T>.Convert(value);
             }
             catch (Exception e)
             {
@@ -259,22 +308,21 @@ namespace Python.Runtime
             }
         }
 
-        public new static int tp_descr_set(IntPtr ds, IntPtr ob, IntPtr val)
+        public int OnDescrSet(IntPtr ds, IntPtr ob, IntPtr val)
         {
-            var self = (InstancePropertyObject<Cls, T>)GetManagedObject(ds);
             if (val == IntPtr.Zero)
             {
                 Exceptions.RaiseTypeError("cannot delete property");
                 return -1;
             }
 
-            if (self.setter == null)
+            if (_setter == null)
             {
                 Exceptions.RaiseTypeError("property is read-only");
                 return -1;
             }
 
-            var co = GetManagedObject(ob) as CLRObject;
+            var co = ManagedType.GetManagedObject(ob) as CLRObject;
             if (co == null)
             {
                 Exceptions.RaiseTypeError("invalid target");
@@ -282,7 +330,7 @@ namespace Python.Runtime
             }
             try
             {
-                self.setter((Cls)co.inst, ValueConverter<T>.Get(val));
+                _setter((Cls)co.inst, ValueConverter<T>.Get(val));
             }
             catch (Exception e)
             {
