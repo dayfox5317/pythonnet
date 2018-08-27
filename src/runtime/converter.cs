@@ -1286,10 +1286,10 @@ namespace Python.Runtime
             PyValueConverter<short>.Convert = (value) => Runtime.PyInt_FromInt32(value);
             PyValueConverter<ushort>.Convert = (value) => Runtime.PyInt_FromInt32(value);
             PyValueConverter<int>.Convert = Runtime.PyInt_FromInt32;
-            PyValueConverter<Int64>.Convert = Runtime.PyLong_FromLongLong;
+            PyValueConverter<long>.Convert = Runtime.PyLong_FromLongLong;
 
             PyValueConverter<uint>.Convert = Runtime.PyLong_FromUnsignedLong;
-            PyValueConverter<UInt64>.Convert = Runtime.PyLong_FromUnsignedLongLong;
+            PyValueConverter<ulong>.Convert = Runtime.PyLong_FromUnsignedLongLong;
             PyValueConverter<float>.Convert = (value) => Runtime.PyFloat_FromDouble(value);
             PyValueConverter<double>.Convert = Runtime.PyFloat_FromDouble;
             //PyValueConverter<decimal>.Convert = (value) =>
@@ -1353,11 +1353,40 @@ namespace Python.Runtime
         }
     }
 
+    // TODO: Make enum type to a pure Python class
+    static class PyEnumConverter<T, TValue>
+        where T : struct, IConvertible
+        where TValue : struct, IConvertible
+    {
+        private static Dictionary<T, TValue> _map = new Dictionary<T, TValue>();
+
+        internal static IntPtr Convert(T val)
+        {
+            TValue biltinVal;
+            if (!_map.TryGetValue(val, out biltinVal))
+            {
+                biltinVal = (TValue)(object)(val);
+                _map.Add(val, biltinVal);
+            }
+            return PyValueConverter<TValue>.Convert(biltinVal);
+        }
+    }
 
     static class PyValueConverter<T>
     {
         public static Func<T, IntPtr> Convert = DefaultConverter;
         private static readonly bool _ = PyValueConverterHelper.InitFlag;
+
+        static PyValueConverter()
+        {
+            Type type = typeof(T);
+            if (type.IsEnum)
+            {
+                var convererType = typeof(PyEnumConverter<,>).MakeGenericType(type, type.GetEnumUnderlyingType());
+                var mi = convererType.GetMethod("Convert", BindingFlags.Static | BindingFlags.NonPublic);
+                Convert = (Func<T, IntPtr>)Delegate.CreateDelegate(typeof(Func<T, IntPtr>), mi);
+            }
+        }
 
         static IntPtr DefaultConverter(T value)
         {
