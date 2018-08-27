@@ -425,10 +425,6 @@ namespace Python.Runtime
         /// </summary>
         internal static IntPtr AllocateTypeObject(string name)
         {
-            if (name.Contains("AddableClass"))
-            {
-                //OperatorMethod.FixupSlots(type);
-            }
             IntPtr type = Runtime.PyType_GenericAlloc(Runtime.PyTypeType, 0);
 
             // Cheat a little: we'll set tp_name to the internal char * of

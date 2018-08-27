@@ -11,6 +11,7 @@ namespace Python.Runtime
     {
         public static Dictionary<string, Tuple<string, int>> OpMethodMap { get; private set; }
 
+        private static Dictionary<string, string> _pyOpNames;
         private static PyObject _opType;
 
         static OperatorMethod()
@@ -31,9 +32,15 @@ namespace Python.Runtime
                 ["op_ExclusiveOr"] = Tuple.Create("__xor__", TypeOffset.nb_xor),
                 ["op_LeftShift"] = Tuple.Create("__lshift__", TypeOffset.nb_lshift),
                 ["op_RightShift"] = Tuple.Create("__rshift__", TypeOffset.nb_rshift),
-                ["op_Modulus"] = Tuple.Create( "__mod__", TypeOffset.nb_remainder),
+                ["op_Modulus"] = Tuple.Create("__mod__", TypeOffset.nb_remainder),
                 ["op_OneComplement"] = Tuple.Create("__invert__", TypeOffset.nb_invert)
             };
+
+            _pyOpNames = new Dictionary<string, string>();
+            foreach (string name in OpMethodMap.Keys)
+            {
+                _pyOpNames.Add(GetPyMethodName(name), name);
+            }
         }
 
         public static void Initialize()
@@ -53,6 +60,11 @@ namespace Python.Runtime
         public static bool IsOperatorMethod(string methodName)
         {
             return OpMethodMap.ContainsKey(methodName);
+        }
+
+        public static bool IsPyOperatorMethod(string pyMethodName)
+        {
+            return _pyOpNames.ContainsKey(pyMethodName);
         }
 
         public static bool IsOperatorMethod(MethodBase method)
@@ -103,6 +115,7 @@ namespace Python.Runtime
         {
             using (PyDict locals = new PyDict())
             {
+                // A hack way for getting typeobject.c::slotdefs
                 string code = GenerateDummyCode();
                 PythonEngine.Exec(code, null, locals.Handle);
                 return locals.GetItem("OperatorMethod");

@@ -385,7 +385,8 @@ namespace Python.Runtime
                 ci.members[name] = ob;
                 if (OperatorMethod.IsOperatorMethod(name))
                 {
-                   ci.members[OperatorMethod.GetPyMethodName(name)] = ob;
+                    string opName = OperatorMethod.GetPyMethodName(name);
+                    ci.members[opName] = GetMethodObject(type, opName, mlist);
                 }
             }
 

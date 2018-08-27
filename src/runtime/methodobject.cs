@@ -289,8 +289,7 @@ namespace Python.Runtime
     class DelegateCallableObject
     {
         public string Name { get; private set; }
-
-        private Dictionary<int, List<Method.IMethodCaller>> _callers;
+        protected Dictionary<int, List<Method.IMethodCaller>> _callers;
 
         public DelegateCallableObject(string name)
         {
@@ -345,7 +344,7 @@ namespace Python.Runtime
             return caller;
         }
 
-        public IntPtr PyCall(IntPtr self, IntPtr args)
+        public virtual IntPtr PyCall(IntPtr self, IntPtr args)
         {
             int argc = Runtime.PyTuple_Size(args);
             // TODO: params array, default params
@@ -445,6 +444,88 @@ namespace Python.Runtime
     }
 
 
+    class DelegateCallableOperatorObject : DelegateCallableObject
+    {
+        private IntPtr _args;
+
+        public DelegateCallableOperatorObject(string name) : base(name)
+        {
+            _args = Runtime.PyTuple_New(2);
+        }
+
+        public override IntPtr PyCall(IntPtr self, IntPtr args)
+        {
+            int argc = Runtime.PyTuple_Size(args);
+            bool useCacheTuple;
+            if (argc == 1)
+            {
+                if (self == IntPtr.Zero)
+                {
+                    return Exceptions.RaiseTypeError("No match found for given type params");
+                }
+                useCacheTuple = true;
+                IntPtr other = Runtime.PyTuple_GetItem(args, 0);
+                Runtime.XIncref(self);
+                Runtime.XIncref(other);
+                Runtime.PyTuple_SetItem(_args, 0, self);
+                Runtime.PyTuple_SetItem(_args, 1, other);
+                args = _args;
+            }
+            else if (argc == 2)
+            {
+                useCacheTuple = false;
+            }
+            else
+            {
+                return Exceptions.RaiseTypeError("Operator method only accept one or two arguments");
+            }
+            try
+            {
+                return InternalCall(self, args);
+            }
+            finally
+            {
+                if (useCacheTuple)
+                {
+                    Runtime.PyTuple_SetItem(_args, 0, IntPtr.Zero);
+                    Runtime.PyTuple_SetItem(_args, 1, IntPtr.Zero);
+                }
+            }
+        }
+
+        private IntPtr InternalCall(IntPtr self, IntPtr args)
+        {
+            List<Method.IMethodCaller> callerList;
+            if (!_callers.TryGetValue(2, out callerList))
+            {
+                return Exceptions.RaiseTypeError("No match found for given type params");
+            }
+            foreach (var caller in callerList)
+            {
+                if (!caller.Check(args, 0))
+                {
+                    continue;
+                }
+                try
+                {
+                    IntPtr res = caller.Call(self, args, 0);
+                    return res;
+                }
+                catch (ConvertException)
+                {
+                    return IntPtr.Zero;
+                }
+                catch (Exception e)
+                {
+                    Exceptions.SetError(e);
+                    return IntPtr.Zero;
+                }
+            }
+            return Exceptions.RaiseTypeError("No match found for given type params");
+        }
+    }
+
+
     static class MethodCreator
     {
         public static ExtensionType CreateDelegateMethod(Type type, string name, MethodInfo[] info)
@@ -460,6 +541,10 @@ namespace Python.Runtime
                     return null;
                 }
             }
+            if (OperatorMethod.IsPyOperatorMethod(name))
+            {
+                return CreateOperatorBinder(type, name, info);
+            }
             var caller = new DelegateCallableObject(name);
             bool hasGeneric = false;
             for (int i = 0; i < info.Length; i++)
@@ -469,7 +554,7 @@ namespace Python.Runtime
                 {
                     continue;
                 }
-                if (mi.GetParameters().Any(T=>T.ParameterType.IsPointer))
+                if (mi.GetParameters().Any(T => T.ParameterType.IsPointer))
                 {
                     continue;
                 }
@@ -497,6 +582,29 @@ namespace Python.Runtime
                 binder = new DelegateMethodObject(caller);
             }
             return binder;
+        }
+
+        private static ExtensionType CreateOperatorBinder(Type type, string name, MethodInfo[] info)
+        {
+            var caller = new DelegateCallableOperatorObject(name);
+            for (int i = 0; i < info.Length; i++)
+            {
+                var mi = info[i];
+                if (mi.ReturnType.IsPointer)
+                {
+                    continue;
+                }
+                var pi = mi.GetParameters();
+                System.Diagnostics.Debug.Assert(pi.Length == 2);
+                if (pi.Any(T => T.ParameterType.IsPointer))
+                {
+                    continue;
+                }
+                System.Diagnostics.Debug.Assert(!mi.IsGenericMethod);
+                System.Diagnostics.Debug.Assert(!mi.IsStatic);
+                caller.AddStaticMethod(mi);
+            }
+            return new DelegateMethodObject(caller);
         }
 
         private static bool CanCreateStaticBinding(MethodInfo mi)

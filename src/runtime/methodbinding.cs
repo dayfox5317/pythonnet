@@ -251,7 +251,7 @@ namespace Python.Runtime
     {
         MethodInfo[] info;
         Type _boundType;
-        IntPtr _target;
+        IntPtr _target; // FIXME: Use finalizer branch for releasing target
 
         Dictionary<Type[], DelegateBoundMethodObject> _genericCallers;
         DelegateCallableObject _caller;
