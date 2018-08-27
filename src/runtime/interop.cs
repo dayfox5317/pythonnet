@@ -4,6 +4,8 @@ using System.Collections.Specialized;
 using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Text;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Python.Runtime
 {
@@ -336,6 +338,7 @@ namespace Python.Runtime
     {
         private static ArrayList keepAlive;
         private static Hashtable pmap;
+        private static Dictionary<MethodProtoInfo, Type> _protoMap;
 
         static Interop()
         {
@@ -344,11 +347,20 @@ namespace Python.Runtime
 
             Type[] items = typeof(Interop).GetNestedTypes();
             Hashtable p = new Hashtable();
+            _protoMap = new Dictionary<MethodProtoInfo, Type>();
 
             for (int i = 0; i < items.Length; i++)
             {
                 Type item = items[i];
                 p[item.Name] = item;
+
+                var method = item.GetMethod("Invoke");
+                var protoInfo = new MethodProtoInfo()
+                {
+                    ReturnType = method.ReturnType,
+                    ParametersType = method.GetParameters().Select(T => T.ParameterType).ToArray()
+                };
+                _protoMap[protoInfo] = item;
             }
 
             keepAlive = new ArrayList();
@@ -449,9 +461,14 @@ namespace Python.Runtime
 #endif
         }
 
-        internal static Type GetPrototype(string name)
+        public static Type GetPrototype(string name)
         {
             return pmap[name] as Type;
+        }
+
+        public static Type GetPrototype(MethodProtoInfo protoInfo)
+        {
+            return _protoMap[protoInfo];
         }
 
         internal static IntPtr GetThunk(MethodInfo method, string funcType = null)
@@ -529,6 +546,34 @@ namespace Python.Runtime
         public Thunk(Delegate d)
         {
             fn = d;
+        }
+    }
+
+    public class MethodProtoInfo
+    {
+        public Type ReturnType { get; set; }
+        public Type[] ParametersType { get; set; }
+
+        public override bool Equals(object obj)
+        {
+            var other = obj as MethodProtoInfo;
+            if (other == null)
+            {
+                return false;
+            }
+            return ReturnType == other.ReturnType
+                && Enumerable.SequenceEqual(ParametersType, other.ParametersType);
+        }
+
+        public override int GetHashCode()
+        {
+            var hashCode = 995274032;
+            hashCode = hashCode * -1521134295 + ReturnType.GetHashCode();
+            foreach (var item in ParametersType)
+            {
+                hashCode = hashCode * -1521134295 + item.GetHashCode();
+            }
+            return hashCode;
         }
     }
 }
