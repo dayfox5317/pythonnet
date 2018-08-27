@@ -12,12 +12,11 @@ namespace Python.Runtime
     /// </summary>
     internal class TypeManager
     {
-        private static BindingFlags tbFlags;
+        private const BindingFlags tbFlags = BindingFlags.Public | BindingFlags.Static;
         private static Dictionary<Type, IntPtr> cache;
 
         static TypeManager()
         {
-            tbFlags = BindingFlags.Public | BindingFlags.Static;
             cache = new Dictionary<Type, IntPtr>(128);
         }
 
@@ -88,7 +87,10 @@ namespace Python.Runtime
                         TypeFlags.HeapType | TypeFlags.HaveGC;
             Util.WriteCLong(type, TypeOffset.tp_flags, flags);
 
-            Runtime.PyType_Ready(type);
+            if (Runtime.PyType_Ready(type) < 0)
+            {
+                throw new PythonException();
+            }
 
             IntPtr dict = Marshal.ReadIntPtr(type, TypeOffset.tp_dict);
             IntPtr mod = Runtime.PyString_FromString("CLR");
@@ -166,7 +168,11 @@ namespace Python.Runtime
             // that the type of the new type must PyType_Type at the time we
             // call this, else PyType_Ready will skip some slot initialization.
 
-            Runtime.PyType_Ready(type);
+            if (Runtime.PyType_Ready(type) < 0)
+            {
+                throw new PythonException();
+            }
+            OperatorMethod.FixupSlots(type, clrType);
 
             IntPtr dict = Marshal.ReadIntPtr(type, TypeOffset.tp_dict);
             string mn = clrType.Namespace ?? "";
@@ -419,6 +425,10 @@ namespace Python.Runtime
         /// </summary>
         internal static IntPtr AllocateTypeObject(string name)
         {
+            if (name.Contains("AddableClass"))
+            {
+                //OperatorMethod.FixupSlots(type);
+            }
             IntPtr type = Runtime.PyType_GenericAlloc(Runtime.PyTypeType, 0);
 
             // Cheat a little: we'll set tp_name to the internal char * of
@@ -518,7 +528,7 @@ namespace Python.Runtime
             IntPtr dict = Marshal.ReadIntPtr(pytype, TypeOffset.tp_dict);
             Type marker = typeof(PythonMethodAttribute);
 
-            BindingFlags flags = BindingFlags.Public | BindingFlags.Static;
+            const BindingFlags flags = BindingFlags.Public | BindingFlags.Static;
             var addedMethods = new HashSet<string>();
 
             while (type != null)

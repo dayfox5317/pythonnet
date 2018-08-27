@@ -209,7 +209,7 @@ namespace Python.Runtime
             // method and a class B that defines two more. The name-based
             // descriptor Python will find needs to know about inherited
             // overloads as well as those declared on the sub class.
-            BindingFlags flags = BindingFlags.Static |
+            const BindingFlags flags = BindingFlags.Static |
                                  BindingFlags.Instance |
                                  BindingFlags.Public |
                                  BindingFlags.NonPublic;
@@ -383,6 +383,10 @@ namespace Python.Runtime
                 var mlist = (MethodInfo[])list.ToArray(typeof(MethodInfo));
                 ob = GetMethodObject(type, name, mlist);
                 ci.members[name] = ob;
+                if (OperatorMethod.IsOperatorMethod(name))
+                {
+                   ci.members[OperatorMethod.GetPyMethodName(name)] = ob;
+                }
             }
 
             return ci;
