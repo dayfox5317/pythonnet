@@ -1,0 +1,87 @@
+<#@ template  debug="true" hostSpecific="true" #>
+<#@ output extension=".cs" #>
+<#@ Assembly Name="System.Core" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Diagnostics" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Collections" #>
+<#@ import namespace="System.Collections.Generic" #> 
+<#
+    const int count = 4;
+#>
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Dynamic;
+using System.Linq.Expressions;
+
+namespace Python.Runtime
+{
+    public partial class PyObject : DynamicObject, IEnumerable, IDisposable
+    {
+        // TODO: Invoke Func<>
+
+        public void InvokeAction()
+        {
+            IntPtr args = Runtime.PyTuple_New(0);
+            IntPtr r;
+            try
+            {
+                r = Runtime.PyObject_Call(obj, args, IntPtr.Zero);
+            }
+            finally
+            {
+                Runtime.XDecref(args);
+            }
+            if (r == IntPtr.Zero)
+            {
+                throw new PythonException();
+            }
+            Runtime.XDecref(r);
+        }
+
+<#
+    for (int i = 1; i < count; i++)
+    {
+        string[] genParamStrs = new string[i];
+        string[] invokeParamStrs = new string[i];
+        string[] argStrs = new string[i];
+        for (int j = 0; j < i; j++)
+        {
+            genParamStrs[j] = string.Format("T{0}", j + 1);
+            invokeParamStrs[j] = string.Format("{0} a{1}", genParamStrs[j], j+ 1);
+            argStrs[j] = string.Format("a{0}", j + 1);
+        }
+        string genParam = string.Join(", ", genParamStrs);
+        string invokeParam = string.Join(", ", invokeParamStrs);
+        string args = string.Join(", ", argStrs);
+#>
+        public void InvokeAction<<#= genParam #>>(<#= invokeParam #>)
+        {
+            IntPtr args = TuplePacker.Pack(<#= args #>);
+            if (args == IntPtr.Zero)
+            {
+                throw new PythonException();
+            }
+            IntPtr r;
+            try
+            {
+                r = Runtime.PyObject_Call(obj, args, IntPtr.Zero);
+            }
+            finally
+            {
+                Runtime.XDecref(args);
+            }
+            if (r == IntPtr.Zero)
+            {
+                throw new PythonException();
+            }
+            Runtime.XDecref(r);
+        }
+
+<#
+    }
+#>
+    }
+}

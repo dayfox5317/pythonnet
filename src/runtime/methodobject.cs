@@ -601,7 +601,7 @@ namespace Python.Runtime
                     continue;
                 }
                 System.Diagnostics.Debug.Assert(!mi.IsGenericMethod);
-                System.Diagnostics.Debug.Assert(!mi.IsStatic);
+                System.Diagnostics.Debug.Assert(mi.IsStatic);
                 caller.AddStaticMethod(mi);
             }
             return new DelegateMethodObject(caller);
