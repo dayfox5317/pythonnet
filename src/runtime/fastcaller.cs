@@ -11,32 +11,22 @@ namespace Python.Runtime.Binder
     {
         private static Dictionary<Type, WrapBinder> _binders = new Dictionary<Type, WrapBinder>();
 
-        public static void RegisterType(Type type, WrapBinder binder)
+        public static void RegisterBinder(WrapBinder binder)
         {
-            _binders.Add(type, binder);
+            _binders.Add(binder.Target, binder);
         }
 
         public static void UnRegisterType(Type type)
         {
             _binders.Remove(type);
         }
-
-        bool TryBindNative(Type type)
-        {
-            WrapBinder binder;
-            if (!_binders.TryGetValue(type, out binder))
-            {
-                return false;
-            }
-            binder.Register(type);
-            return true;
-        }
-
+        
         public static WrapBinder GetBinder(Type type)
         {
             WrapBinder binder;
             if (_binders.TryGetValue(type, out binder))
             {
+                binder.Init();
                 return binder;
             }
             return null;
@@ -49,7 +39,7 @@ namespace Python.Runtime.Binder
             {
                 return null;
             }
-            binder.Register(type);
+            binder.Init();
             ClassInfo info = new ClassInfo(type);
             foreach (var item in binder.IterMethodDescrs())
             {
@@ -59,32 +49,48 @@ namespace Python.Runtime.Binder
         }
     }
 
+    public interface IWrapperInitializer
+    {
+        void Setup();
+    }
 
     public abstract class WrapBinder
     {
+        public Type Target { get; protected set; }
+
         private Dictionary<string, PyCFunction> _methods = new Dictionary<string, PyCFunction>();
         private Dictionary<string, Tuple<Interop.BinaryFunc, Interop.ObjObjFunc>> _fields;
-
         private PyCFunction _ctor;
-        public Type Target { get; protected set; }
+
+        private bool _inited = false;
 
         public WrapBinder()
         {
             _fields = new Dictionary<string, Tuple<Interop.BinaryFunc, Interop.ObjObjFunc>>();
         }
 
-        public void RegisterCtor(PyCFunction func)
+        internal void Init()
+        {
+            if (_inited)
+            {
+                return;
+            }
+            _inited = true;
+            Setup();
+        }
+
+        protected void RegisterCtor(PyCFunction func)
         {
             _ctor = func;
         }
 
-        public void RegisterMethod(string name, PyCFunction func)
+        protected void RegisterMethod(string name, PyCFunction func)
         {
             // TODO: Exception handler
             _methods.Add(name, func);
         }
 
-        public void RegisterField(string name, Interop.BinaryFunc getter, Interop.ObjObjFunc setter)
+        protected void RegisterField(string name, Interop.BinaryFunc getter, Interop.ObjObjFunc setter)
         {
             _fields.Add(name, Tuple.Create(getter, setter));
         }
@@ -124,65 +130,10 @@ namespace Python.Runtime.Binder
                 yield return new KeyValuePair<string, FastMethodCaller>(name, descr);
             }
         }
-
-        void Register(Type type, string name, MethodInfo[] info)
-        {
-
-        }
-
-        public abstract void Register(Type type);
+        
+        protected abstract void Setup();
     }
     
-
-    class SampleClass
-    {
-        public int Func1(string a, int b)
-        {
-            return 10;
-        }
-    }
-
-    class SampleWrapper : WrapBinder
-    {
-        public override void Register(Type type)
-        {
-            Add(SampleCall);
-        }
-
-        void Add(PyCFunction func)
-        {
-            string name = func.Method.Name;
-           // var caller = new FastMethodCaller();
-            
-        }
-
-        static string ExtractString(IntPtr op, int index)
-        {
-            IntPtr value = Runtime.PyTuple_GetItem(op, index);
-            return Runtime.GetManagedString(value);
-        }
-
-        static int ExtractInt(IntPtr op, int index)
-        {
-            IntPtr value = Runtime.PyTuple_GetItem(op, index);
-            return Runtime.PyInt_AsLong(op);
-        }
-
-        static IntPtr SampleCall(IntPtr self, IntPtr args)
-        {
-            int argc = Runtime.PyTuple_Size(args);
-            if (argc == 2 && TypeCheck.Check<string, int>(args))
-            {
-                var clrObj = (CLRObject)ManagedType.GetManagedObject(self);
-                string arg0 = ExtractString(args, 0);
-                int arg1 = ExtractInt(args, 1);
-                ((SampleClass)clrObj.inst).Func1(arg0, arg1);
-                Runtime.Py_IncRef(Runtime.PyNone);
-                return Runtime.PyNone;
-            }
-            return IntPtr.Zero;
-        }
-    }
 
     class FastMethodCaller : ExtensionType
     {
@@ -192,12 +143,7 @@ namespace Python.Runtime.Binder
 
         PyMethodDef def;
         IntPtr _methodDefPtr;
-
-        public FastMethodCaller(Type type, string name, MethodInfo[] info)
-        {
-            Name = name;
-        }
-
+        
         public FastMethodCaller(string name, PyCFunction func)
         {
             Name = name;
