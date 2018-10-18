@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
@@ -14,13 +14,29 @@ namespace Python.Runtime
     {
         private static BindingFlags tbFlags;
         private static Dictionary<Type, IntPtr> cache;
+        private static List<IntPtr> rawtypes;
 
         static TypeManager()
         {
             tbFlags = BindingFlags.Public | BindingFlags.Static;
             cache = new Dictionary<Type, IntPtr>(128);
+            rawtypes = new List<IntPtr>();
         }
 
+        internal static void Shutdown()
+        {
+            // FIXME: Free the types those hasve been incrref
+            //foreach (var item in cache.Values)
+            //{
+            //    Runtime.Py_DecRef(item);
+            //}
+            cache.Clear();
+            //foreach (IntPtr tp in rawtypes)
+            //{
+            //    Runtime.Py_DecRef(tp);
+            //}
+            rawtypes.Clear();
+        }
 
         /// <summary>
         /// Given a managed Type derived from ExtensionType, get the handle to
@@ -93,6 +109,7 @@ namespace Python.Runtime
             IntPtr dict = Marshal.ReadIntPtr(type, TypeOffset.tp_dict);
             IntPtr mod = Runtime.PyString_FromString("CLR");
             Runtime.PyDict_SetItemString(dict, "__module__", mod);
+            Runtime.Py_DecRef(mod);
 
             InitMethods(type, impl);
 
@@ -351,6 +368,7 @@ namespace Python.Runtime
             IntPtr dict = Marshal.ReadIntPtr(type, TypeOffset.tp_dict);
             IntPtr mod = Runtime.PyString_FromString("CLR");
             Runtime.PyDict_SetItemString(dict, "__module__", mod);
+            Runtime.Py_DecRef(mod);
 
             //DebugUtil.DumpType(type);
 
@@ -393,6 +411,7 @@ namespace Python.Runtime
             IntPtr tp_dict = Marshal.ReadIntPtr(type, TypeOffset.tp_dict);
             IntPtr mod = Runtime.PyString_FromString("CLR");
             Runtime.PyDict_SetItemString(tp_dict, "__module__", mod);
+            Runtime.Py_DecRef(mod);
 
             return type;
         }
@@ -536,6 +555,11 @@ namespace Python.Runtime
         {
             IntPtr fp = Marshal.ReadIntPtr(from, offset);
             Marshal.WriteIntPtr(to, offset, fp);
+        }
+
+        internal static void AddRawType(IntPtr tp)
+        {
+            rawtypes.Add(tp);
         }
     }
 }

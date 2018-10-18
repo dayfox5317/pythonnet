@@ -8,11 +8,18 @@ using System.Runtime.InteropServices;
 
 namespace Python.Runtime
 {
+    public class ResolveStreamResourceArgs : EventArgs
+    {
+        public string Name { get; set; }
+    }
+
     /// <summary>
     /// This class provides the public interface of the Python runtime.
     /// </summary>
     public class PythonEngine : IDisposable
     {
+        public static event Func<ResolveStreamResourceArgs, Stream> StreamResourceResolve;
+
         private const int NUM_GENERATIONS = 3;
 
         private static DelegateManager delegateManager;
@@ -194,17 +201,25 @@ namespace Python.Runtime
                 // Load the clr.py resource into the clr module
                 IntPtr clr = Python.Runtime.ImportHook.GetCLRModule();
                 IntPtr clr_dict = Runtime.PyModule_GetDict(clr);
+                if (clr_dict == IntPtr.Zero)
+                {
+                    throw new PythonException();
+                }
 
                 var locals = new PyDict();
+                IntPtr module = IntPtr.Zero;
                 try
                 {
-                    IntPtr module = Runtime.PyImport_AddModule("clr._extras");
+                    module = Runtime.PyImport_AddModule("clr._extras");
+                    if (module == IntPtr.Zero)
+                    {
+                        throw new PythonException();
+                    }
                     IntPtr module_globals = Runtime.PyModule_GetDict(module);
                     IntPtr builtins = Runtime.PyEval_GetBuiltins();
                     Runtime.PyDict_SetItemString(module_globals, "__builtins__", builtins);
 
-                    Assembly assembly = Assembly.GetExecutingAssembly();
-                    using (Stream stream = assembly.GetManifestResourceStream("clr.py"))
+                    using (Stream stream = LoadResource("clr.py"))
                     using (var reader = new StreamReader(stream))
                     {
                         // add the contents of clr.py to the module
@@ -215,7 +230,8 @@ namespace Python.Runtime
                     // add the imported module to the clr module, and copy the API functions
                     // and decorators into the main clr module.
                     Runtime.PyDict_SetItemString(clr_dict, "_extras", module);
-                    foreach (PyObject key in locals.Keys())
+                    using (PyObject keys = locals.Keys())
+                    foreach (PyObject key in keys)
                     {
                         if (!key.ToString().StartsWith("_") || key.ToString().Equals("__version__"))
                         {
@@ -229,6 +245,10 @@ namespace Python.Runtime
                 finally
                 {
                     locals.Dispose();
+                    if (clr != IntPtr.Zero)
+                    {
+                      Runtime.Py_DecRef(clr);
+                    }
                 }
             }
         }
@@ -507,7 +527,7 @@ namespace Python.Runtime
                     borrowedGlobals = false;
                 }
             }
-            
+
             if (locals == null)
             {
                 locals = globals;
@@ -530,6 +550,29 @@ namespace Python.Runtime
                     Runtime.XDecref(globals.Value);
                 }
             }
+        }
+
+        private static Stream LoadResource(string name)
+        {
+            var args = new ResolveStreamResourceArgs()
+            {
+                Name = name
+            };
+            Stream stream;
+            if (StreamResourceResolve != null)
+            {
+                foreach (Func<ResolveStreamResourceArgs, Stream> resolver in StreamResourceResolve.GetInvocationList())
+                {
+                    stream = resolver(args);
+                    if (stream != null)
+                    {
+                        return stream;
+                    }
+                }
+            }
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            stream = assembly.GetManifestResourceStream(name);
+            return stream;
         }
 
         internal static void ResetGC()
@@ -619,7 +662,7 @@ namespace Python.Runtime
             var scope = PyScopeManager.Global.Create(name);
             return scope;
         }
-        
+
         public class GILState : IDisposable
         {
             private IntPtr state;
@@ -716,7 +759,7 @@ namespace Python.Runtime
 
         public static void With(PyObject obj, Action<dynamic> Body)
         {
-            // Behavior described here: 
+            // Behavior described here:
             // https://docs.python.org/2/reference/datamodel.html#with-statement-context-managers
 
             IntPtr type = Runtime.PyNone;

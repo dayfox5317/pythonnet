@@ -54,4 +54,4 @@
 -   ([@rmadsen-ks](https://github.com/rmadsen-ks))
 -   ([@stonebig](https://github.com/stonebig))
 -   ([@testrunner123](https://github.com/testrunner123))
-
+-   ([@amos402](https://github.com/amos402))

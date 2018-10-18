@@ -162,7 +162,7 @@ namespace Python.Runtime
 #endif
 
 #if PYTHON_WITH_PYDEBUG
-        internal const string dllWithPyDebug = "d";
+        internal const string dllWithPyDebug = "_d";
 #else
         internal const string dllWithPyDebug = "";
 #endif
@@ -231,19 +231,33 @@ namespace Python.Runtime
                 op = PyDict_GetItemString(dict, "__builtin__");
             }
             PyNotImplemented = PyObject_GetAttrString(op, "NotImplemented");
+            TypeManager.AddRawType(PyNotImplemented);
+
             PyBaseObjectType = PyObject_GetAttrString(op, "object");
+            TypeManager.AddRawType(PyBaseObjectType);
 
             PyModuleType = PyObject_Type(op);
             PyNone = PyObject_GetAttrString(op, "None");
+            TypeManager.AddRawType(PyNone);
+
             PyTrue = PyObject_GetAttrString(op, "True");
+            TypeManager.AddRawType(PyTrue);
+
             PyFalse = PyObject_GetAttrString(op, "False");
+            TypeManager.AddRawType(PyFalse);
 
             PyBoolType = PyObject_Type(PyTrue);
+            TypeManager.AddRawType(PyBoolType);
+
             PyNoneType = PyObject_Type(PyNone);
+            TypeManager.AddRawType(PyNoneType);
+
             PyTypeType = PyObject_Type(PyNoneType);
+            TypeManager.AddRawType(PyTypeType);
 
             op = PyObject_GetAttrString(dict, "keys");
             PyMethodType = PyObject_Type(op);
+            TypeManager.AddRawType(PyMethodType);
             XDecref(op);
 
             // For some arcane reason, builtins.__dict__.__setitem__ is *not*
@@ -260,40 +274,49 @@ namespace Python.Runtime
 
             op = PyString_FromString("string");
             PyStringType = PyObject_Type(op);
+            TypeManager.AddRawType(PyStringType);
             XDecref(op);
 
             op = PyUnicode_FromString("unicode");
             PyUnicodeType = PyObject_Type(op);
+            TypeManager.AddRawType(PyUnicodeType);
             XDecref(op);
 
 #if PYTHON3
             op = PyBytes_FromString("bytes");
             PyBytesType = PyObject_Type(op);
+            TypeManager.AddRawType(PyBytesType);
             XDecref(op);
 #endif
 
             op = PyTuple_New(0);
             PyTupleType = PyObject_Type(op);
+            TypeManager.AddRawType(PyTupleType);
             XDecref(op);
 
             op = PyList_New(0);
             PyListType = PyObject_Type(op);
+            TypeManager.AddRawType(PyListType);
             XDecref(op);
 
             op = PyDict_New();
             PyDictType = PyObject_Type(op);
+            TypeManager.AddRawType(PyDictType);
             XDecref(op);
 
             op = PyInt_FromInt32(0);
             PyIntType = PyObject_Type(op);
+            TypeManager.AddRawType(PyIntType);
             XDecref(op);
 
             op = PyLong_FromLong(0);
             PyLongType = PyObject_Type(op);
+            TypeManager.AddRawType(PyLongType);
             XDecref(op);
 
             op = PyFloat_FromDouble(0);
             PyFloatType = PyObject_Type(op);
+            TypeManager.AddRawType(PyFloatType);
             XDecref(op);
 
 #if PYTHON3
@@ -305,9 +328,11 @@ namespace Python.Runtime
 
             IntPtr c = PyClass_New(IntPtr.Zero, d, s);
             PyClassType = PyObject_Type(c);
+            TypeManager.AddRawType(PyClassType);
 
             IntPtr i = PyInstance_New(c, IntPtr.Zero, IntPtr.Zero);
             PyInstanceType = PyObject_Type(i);
+            TypeManager.AddRawType(PyInstanceType);
 
             XDecref(s);
             XDecref(i);
@@ -335,6 +360,8 @@ namespace Python.Runtime
             // Initialize modules that depend on the runtime class.
             AssemblyManager.Initialize();
             PyCLRMetaType = MetaType.Initialize();
+            TypeManager.AddRawType(PyCLRMetaType);
+
             Exceptions.Initialize();
             ImportHook.Initialize();
 
@@ -353,6 +380,8 @@ namespace Python.Runtime
             AssemblyManager.Shutdown();
             Exceptions.Shutdown();
             ImportHook.Shutdown();
+            TypeManager.Shutdown();
+            ClassManager.Shutdown();
             Py_Finalize();
         }
 
@@ -582,6 +611,7 @@ namespace Python.Runtime
             {
                 return 0;
             }
+            p = (byte*)p + TypeOffset.ob_refcnt;
             return Is32Bit ? (*(int*)p) : (*(long*)p);
         }
 
@@ -633,6 +663,9 @@ namespace Python.Runtime
 
         [DllImport(_PythonDll, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr PyThreadState_Swap(IntPtr key);
+
+        [DllImport(_PythonDll, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern long PyGC_Collect();
 
         [DllImport(_PythonDll, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr PyGILState_Ensure();
@@ -1490,8 +1523,16 @@ namespace Python.Runtime
         internal static extern string PyModule_GetFilename(IntPtr module);
 
 #if PYTHON3
+
+#if PYTHON_WITH_PYDEBUG
+        [DllImport(_PythonDll, CallingConvention = CallingConvention.Cdecl,
+            EntryPoint = "PyModule_Create2TraceRefs")]
+        internal static extern IntPtr PyModule_Create2(IntPtr module, int apiver);
+#else
         [DllImport(_PythonDll, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr PyModule_Create2(IntPtr module, int apiver);
+#endif
+
 #endif
 
         [DllImport(_PythonDll, CallingConvention = CallingConvention.Cdecl)]
@@ -1585,6 +1626,9 @@ namespace Python.Runtime
 
         [DllImport(_PythonDll, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void PyObject_GC_UnTrack(IntPtr tp);
+
+        [DllImport(_PythonDll, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void _PyObject_Dump(IntPtr ob);
 
 
         //====================================================================
