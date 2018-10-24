@@ -164,7 +164,7 @@ namespace Python.Runtime
             finally
             {
                 Instance.ResetPending();
-                Marshal.FreeHGlobal(arg);
+                // Marshal.FreeHGlobal(arg);
             }
             return 0;
         }
