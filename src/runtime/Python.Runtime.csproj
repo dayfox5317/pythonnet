@@ -76,6 +76,10 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="delegatecaller.cs" />
+    <Compile Include="dynamicgenerichelper.cs" />
+    <Compile Include="fastcaller.cs" />
+    <Compile Include="methodcaller.cs" />
     <Compile Include="operator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="..\SharedAssemblyInfo.cs">
@@ -130,6 +134,7 @@
     <Compile Include="pylong.cs" />
     <Compile Include="pynumber.cs" />
     <Compile Include="pyobject.cs" />
+    <Compile Include="pyobject_.cs" />
     <Compile Include="pyscope.cs" />
     <Compile Include="pysequence.cs" />
     <Compile Include="pystring.cs" />
@@ -137,8 +142,11 @@
     <Compile Include="pythonexception.cs" />
     <Compile Include="pytuple.cs" />
     <Compile Include="runtime.cs" />
+    <Compile Include="tuplepacker.cs" />
+    <Compile Include="typecheck.cs" />
     <Compile Include="typemanager.cs" />
     <Compile Include="typemethod.cs" />
+    <Compile Include="typetraits.cs" />
     <Compile Include="Util.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(PythonInteropFile)' != '' ">

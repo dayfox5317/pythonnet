@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace Python.Runtime
 {
-    using Python.Runtime.Method;
+    //using Python.Runtime.Method;
 #if !AOT
     using System.Reflection.Emit;
 #endif
